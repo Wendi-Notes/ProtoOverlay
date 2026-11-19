@@ -77,6 +77,10 @@ ProtoOverlay は Android 11 以降のスマートフォンにマスコット「�
 
 Tailscale は接続先への到達性を提供しますが、LiveKit のすべてのメディア通信が自動的に Tailscale 経由になるわけではありません。LiveKit サーバーの公開方法、TLS、ファイアウォール、UDP が使えない場合の TURN 設定は、PC・サーバー側の構成に依存します。
 
+## 音声処理について
+
+LiveKit は主にリアルタイムの音声・映像・データ通信を担います。音声認識（STT）や音声合成（TTS）は、PC 側エージェントで LiveKit Agents と外部サービスを組み合わせる構成のほか、エージェントの実装に応じてプロバイダーを切り替えたり、PC 上のローカル／自前の STT・LLM・TTS で処理したりできます。利用料金は選ぶサービスや契約によって異なります。これらの選択・設定は PC 側エージェントで行い、Android アプリから音声処理方式を切り替える機能はありません。
+
 ## まず試す（APK）
 
 1. [Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) から APK をダウンロードします。リリースがまだない場合は、配布用 APK は未公開です。

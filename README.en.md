@@ -64,6 +64,10 @@ The Android app requests a token from the configured PC-side service at `/token?
 
 Tailscale can provide private reachability between the phone and PC. The app does not directly control Tailscale or embed its SDK. LiveKit media connectivity, TLS, firewall rules, UDP, and TURN configuration depend on the server deployment; not all media traffic automatically travels through Tailscale.
 
+## Voice processing options
+
+LiveKit primarily handles real-time audio, video, and data transport. Speech-to-text (STT) and text-to-speech (TTS) can be provided by external services integrated with LiveKit Agents, or—depending on the PC-side agent's implementation—by switching providers or running STT, an LLM, and TTS locally on the PC. Costs depend on the selected services and plans. These choices are configured in the PC-side agent; the Android app does not let you switch voice-processing methods.
+
 See the [user setup guide](docs/SETUP.md) before installing.
 
 ## Install

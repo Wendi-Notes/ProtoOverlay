@@ -18,6 +18,10 @@
 
 HTTPS の利用を推奨します。LiveKit の WebSocket／メディア通信が tailnet 上で使えるかはサーバー構成、DNS、ファイアウォール、UDP、TURN に依存します。ネットワークの設定や外部公開が必要な場合は、PC・LiveKit の管理者と確認してください。
 
+### 音声処理の選択肢
+
+LiveKit は主にリアルタイムの音声・映像・データ通信を担います。音声認識（STT）や音声合成（TTS）には、LiveKit Agents と外部サービスを組み合わせる方法や、PC 側エージェントの実装に応じてプロバイダーを切り替える方法があります。PC 上のローカル／自前の STT・LLM・TTS で処理する構成も可能です。料金は選ぶサービスや契約によって異なります。いずれも PC 側エージェントでの実装・設定が必要で、Android アプリから方式を選ぶことはできません。
+
 ## 2. Android に APK を入れる
 
 1. [GitHub Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) から APK をダウンロードします。リリースがない場合は、まだ配布用 APK が公開されていません。
