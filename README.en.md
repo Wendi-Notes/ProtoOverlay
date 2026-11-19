@@ -64,6 +64,20 @@ The Android app requests a token from the configured PC-side service at `/token?
 
 Tailscale can provide private reachability between the phone and PC. The app does not directly control Tailscale or embed its SDK. LiveKit media connectivity, TLS, firewall rules, UDP, and TURN configuration depend on the server deployment; not all media traffic automatically travels through Tailscale.
 
+## Voice processing options
+
+LiveKit primarily handles real-time audio, video, and data transport. The STT and TTS services depend on the PC-side agent and LiveKit Agents configuration; LiveKit itself does not provide them universally. If the services used in a standard setup do not fit your needs or budget, consider switching to another provider supported by the agent or running STT, an LLM, and TTS locally on the PC. Costs depend on the selected services and plans. These choices are configured in the PC-side agent; the Android app does not let you switch voice-processing methods.
+
+> **Voice output:** To hear the AI's spoken replies on your phone, configure TTS and a voice in the PC-side agent and have it publish the generated audio to LiveKit. Without that setup, the app receives no spoken AI replies. The setup and supported voice services depend on the PC-side agent.
+
+## Example voice-processing setup (PC side)
+
+<p align="center"><img src="docs/images/voice-processing.svg" width="100%" alt="Example flow: Android audio goes through LiveKit to a PC-side agent, is transcribed by kotoba-whisper, synthesized by VOICEVOX, and returned to the phone"></p>
+
+In the PC-side setup used by the author, [kotoba-whisper](https://github.com/kotoba-tech/kotoba-whisper) is used for speech recognition (STT), and [VOICEVOX](https://voicevox.hiroshiba.jp/) for synthesizing spoken replies (TTS). LiveKit transports the audio; these speech services and the PC-side agent are not included in this Android repository. The actual services and voice depend on the agent's configuration.
+
+When using VOICEVOX, follow its [software terms](https://voicevox.hiroshiba.jp/term/) and the terms for the selected voice library, and provide any required credits.
+
 See the [user setup guide](docs/SETUP.md) before installing.
 
 ## Install
