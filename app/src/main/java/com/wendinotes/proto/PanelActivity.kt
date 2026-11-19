@@ -90,7 +90,7 @@ class PanelActivity : Activity() {
         ProtoBus.panel = this
         setFinishOnTouchOutside(true)
         th = BarTheme.current(this)
-        ProtoBus.onHistory = historyHook
+        ProtoBus.addHistoryListener(historyHook)
 
         val r = dp(18).toFloat()
         val base = GradientDrawable().apply {
@@ -239,7 +239,7 @@ class PanelActivity : Activity() {
 
     override fun onDestroy() {
         if (ProtoBus.panel === this) ProtoBus.panel = null
-        if (ProtoBus.onHistory === historyHook) ProtoBus.onHistory = null   // ダッシュボードの履歴更新は消さない
+        ProtoBus.removeHistoryListener(historyHook)   // ダッシュボードの履歴更新はそのまま
         root.viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
         if (!ProtoBus.dashboardVisible) ProtoBus.setPanelTop(null)
         super.onDestroy()

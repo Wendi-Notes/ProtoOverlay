@@ -38,6 +38,7 @@ class SettingsActivity : Activity() {
     }
     private var builtTheme = ""
     private lateinit var historyContainer: LinearLayout
+    private val historyHook: () -> Unit = { runOnUiThread { if (onScreen) renderHistory() } }
     private lateinit var historySv: ScrollView
     private lateinit var btnStartStop: Button
     private lateinit var btnPause: Button
@@ -178,6 +179,7 @@ class SettingsActivity : Activity() {
         onScreen = true
         ProtoBus.dashboardVisible = true
         ProtoBus.onConn = connHook
+        ProtoBus.addHistoryListener(historyHook)   // 履歴が空のまま開いても、新しい発言ですぐ書き換わるように
         if (ProtoBus.service != null && !ProtoBus.paused) ProtoBus.service?.call?.connect()
         updateStatus()
         renderHistory()
@@ -212,6 +214,7 @@ class SettingsActivity : Activity() {
         onScreen = false
         ProtoBus.dashboardVisible = false
         if (ProtoBus.onConn === connHook) ProtoBus.onConn = null
+        ProtoBus.removeHistoryListener(historyHook)
         ProtoBus.setPanelTop(null, spin = true)   // アプリを閉じた：くるっと回りながら画面の下へ落ちる
     }
 
@@ -305,7 +308,6 @@ class SettingsActivity : Activity() {
 
         ChatBubbles.render(this, historyContainer, ProtoBus.history, ChatBubbles.app(), 14f)
         historySv.post { historySv.scrollTo(0, 0) }
-        ProtoBus.onHistory = { runOnUiThread { renderHistory() } }
     }
 
     private fun actionButton(label: String, onClick: () -> Unit) = Button(this).apply {

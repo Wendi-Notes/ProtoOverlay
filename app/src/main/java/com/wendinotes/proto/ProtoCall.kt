@@ -119,9 +119,11 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
                 r.registerTextStreamHandler("lk.transcription") { reader, from ->
                     scope.launch {
                         try {
-                            val text = reader.readAll().joinToString("")
-                            val me = from == r.localParticipant.identity
-                            ProtoBus.addHistory(if (me) "あなた" else "プロト", text)
+                            val key = reader.info.attributes["lk.segment_id"] ?: reader.info.id
+                            val who = if (from == r.localParticipant.identity) "あなた" else "プロト"
+                            // 届いた分からすぐ出す。話している途中の文字も同じ発言として届くので、同じ行を書き換える
+                            val sb = StringBuilder()
+                            reader.flow.collect { chunk -> sb.append(chunk); ProtoBus.addHistory(who, sb.toString(), key) }
                         } catch (e: Exception) {
                             Log.w(TAG, "文字起こしを読めなかった", e)
                         }

@@ -46,19 +46,34 @@ object ProtoBus {
 
     /** チャット履歴（この常駐の間だけ。停止・再起動で消える）。設定の「一般」に表示 */
     val history = mutableListOf<Pair<String, String>>()   // (話した人, 内容)
-    var onHistory: (() -> Unit)? = null
-    fun addHistory(who: String, text: String) {
+    private val historyKeys = mutableListOf<String?>()     // 発言ごとの印（同じ印＝話している途中の書き換え）
+    /** 履歴が変わった時に呼ぶ相手（ダッシュボードとバーの両方が同時に入れる） */
+    private val historyListeners = java.util.concurrent.CopyOnWriteArraySet<() -> Unit>()
+    fun addHistoryListener(l: () -> Unit) { historyListeners += l }
+    fun removeHistoryListener(l: () -> Unit) { historyListeners -= l }
+    private fun notifyHistory() { historyListeners.forEach { it() } }
+
+    /** key が同じ発言はその行を書き換える（話している途中の文字が、確定の文に置き換わる） */
+    fun addHistory(who: String, text: String, key: String? = null) {
         if (text.isBlank()) return
         val trimmed = text.trim()
+        if (key != null) {
+            val i = historyKeys.lastIndexOf(key)
+            if (i >= 0) {
+                if (history[i].second != trimmed) { history[i] = who to trimmed; notifyHistory() }
+                return
+            }
+        }
         // 直近の履歴と同じ内容が連続して追加されるのを防ぐ（重複防止）
         if (history.isNotEmpty() && history.last().second == trimmed) {
             return
         }
         history += who to trimmed
-        while (history.size > 200) history.removeAt(0)
-        onHistory?.invoke()
+        historyKeys += key
+        while (history.size > 200) { history.removeAt(0); historyKeys.removeAt(0) }
+        notifyHistory()
     }
-    fun clearHistory() { history.clear(); onHistory?.invoke() }
+    fun clearHistory() { history.clear(); historyKeys.clear(); notifyHistory() }
 
     /** 一時停止中（通知のボタン）。おやすみ＋マイクも切る */
     var paused = false
