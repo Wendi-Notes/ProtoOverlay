@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" role="img" aria-labelledby="title desc">
+  <title id="title">音声処理の流れ（PC側の構成例）</title>
+  <desc id="desc">AndroidアプリからLiveKitを通じてPC側エージェントへ音声を送り、音声認識、返答生成、音声合成を経て返答音声を受け取る流れ。</desc>
+  <defs>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#4568f5"/></marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#8050f6"/></marker>
+    <style>
+      text { font-family: "Yu Gothic UI", "Meiryo", sans-serif; fill: #203452; }
+      .muted { fill:#586a86; }
+      .box { fill:#fff; stroke:#9aacca; stroke-width:2; }
+      .inner { fill:#eff4ff; stroke:#cad6ee; stroke-width:1; }
+      .tts { fill:#fff6ec; stroke:#ead1b4; stroke-width:1; }
+      .lineB { stroke:#4568f5; stroke-width:3; marker-end:url(#arrowBlue); }
+      .lineP { stroke:#8050f6; stroke-width:3; marker-end:url(#arrowPurple); }
+    </style>
+  </defs>
+  <rect width="1200" height="470" rx="26" fill="#f5f7fb"/>
+  <text x="40" y="54" font-size="27" font-weight="700">音声処理の流れ（PC側の構成例）</text>
+  <text x="40" y="82" font-size="16" class="muted">利用するサービスや処理の流れは、エージェントの設定によって変わります</text>
+
+  <rect class="box" x="35" y="150" width="205" height="180" rx="20"/>
+  <circle cx="137" cy="193" r="25" fill="#e8eeff"/>
+  <path d="M137 178v29 M126 194a11 11 0 0 0 22 0 M137 208v8 M130 216h14" fill="none" stroke="#4568f5" stroke-width="3" stroke-linecap="round"/>
+  <text x="137" y="245" text-anchor="middle" font-size="19" font-weight="700">Androidアプリ</text>
+  <text x="137" y="274" text-anchor="middle" font-size="16" class="muted">ProtoOverlay</text>
+  <text x="137" y="303" text-anchor="middle" font-size="15" class="muted">マイク・スピーカー</text>
+
+  <line class="lineB" x1="240" y1="213" x2="321" y2="213"/>
+  <text x="280" y="198" text-anchor="middle" font-size="12" fill="#4568f5">入力音声</text>
+  <line class="lineP" x1="322" y1="275" x2="241" y2="275"/>
+  <text x="282" y="298" text-anchor="middle" font-size="12" fill="#8050f6">返答音声</text>
+
+  <rect class="box" x="330" y="168" width="205" height="145" rx="19"/>
+  <rect x="348" y="190" width="35" height="30" rx="8" fill="#e8eeff"/>
+  <circle cx="360" cy="205" r="4" fill="#4568f5"/><circle cx="372" cy="205" r="4" fill="#4568f5"/>
+  <text x="400" y="211" font-size="20" font-weight="700">LiveKit</text>
+  <text x="348" y="246" font-size="13" class="muted">音声・映像・データを</text>
+  <text x="348" y="266" font-size="13" class="muted">リアルタイムで通信</text>
+  <text x="348" y="289" font-size="12" class="muted">音声認識・音声合成は</text>
+  <text x="348" y="305" font-size="12" class="muted">行いません</text>
+
+  <line class="lineB" x1="535" y1="213" x2="615" y2="213"/>
+  <text x="575" y="198" text-anchor="middle" font-size="12" fill="#4568f5">エージェントへ</text>
+  <line class="lineP" x1="615" y1="275" x2="536" y2="275"/>
+  <text x="575" y="298" text-anchor="middle" font-size="12" fill="#8050f6">返答音声</text>
+
+  <rect class="box" x="625" y="105" width="540" height="280" rx="22"/>
+  <text x="650" y="140" font-size="19" font-weight="700">PC側のエージェント</text>
+  <text x="650" y="164" font-size="13" class="muted">Androidアプリには含まれず、PC側で動作します</text>
+
+  <rect class="inner" x="650" y="188" width="145" height="150" rx="16"/>
+  <text x="722" y="224" text-anchor="middle" font-size="17" font-weight="700">kotoba-whisper</text>
+  <text x="722" y="253" text-anchor="middle" font-size="14" fill="#4568f5" font-weight="700">音声認識（STT）</text>
+  <text x="722" y="282" text-anchor="middle" font-size="13" class="muted">音声を文字に</text>
+  <text x="722" y="305" text-anchor="middle" font-size="13" class="muted">変換します</text>
+
+  <line class="lineB" x1="795" y1="263" x2="824" y2="263"/>
+  <rect class="inner" x="830" y="188" width="145" height="150" rx="16"/>
+  <text x="902" y="229" text-anchor="middle" font-size="17" font-weight="700">LLM／エージェント</text>
+  <text x="902" y="258" text-anchor="middle" font-size="14" fill="#8050f6" font-weight="700">返答を生成</text>
+  <text x="902" y="286" text-anchor="middle" font-size="13" class="muted">使用モデルは</text>
+  <text x="902" y="308" text-anchor="middle" font-size="13" class="muted">PC側の設定による</text>
+
+  <line class="lineB" x1="975" y1="263" x2="1004" y2="263"/>
+  <rect class="tts" x="1010" y="188" width="130" height="150" rx="16"/>
+  <text x="1075" y="233" text-anchor="middle" font-size="17" font-weight="700">VOICEVOX</text>
+  <text x="1075" y="262" text-anchor="middle" font-size="14" fill="#c56b19" font-weight="700">音声合成（TTS）</text>
+  <text x="1075" y="292" text-anchor="middle" font-size="13" class="muted">文字を音声に</text>
+  <text x="1075" y="314" text-anchor="middle" font-size="13" class="muted">変換します</text>
+  <path d="M1075 338 V357 H615 V275" fill="none" stroke="#8050f6" stroke-width="3" stroke-linejoin="round"/>
+
+  <text x="40" y="432" font-size="14" class="muted">これはPC側の構成例です。Androidアプリが音声サービスを内蔵したり、選択したりするわけではありません。</text>
+</svg>

@@ -89,7 +89,7 @@ LiveKit は主にリアルタイムの音声・映像・データ通信を担い
 
 ## 音声処理の構成例（PC 側）
 
-<p align="center"><img src="docs/images/voice-processing.svg" width="100%" alt="Android の音声を LiveKit 経由で PC 側エージェントに送り、kotoba-whisper で認識、VOICEVOX で返答音声を合成してスマートフォンに戻す構成例"></p>
+<p align="center"><img src="docs/images/voice-processing-ja.svg" width="100%" alt="Android アプリから LiveKit を通じて PC 側エージェントに音声を送り、kotoba-whisper で認識、VOICEVOX で返答音声を合成してスマートフォンに戻す構成例"></p>
 
 著者が使用する PC 側の構成例では、音声認識（STT）に [kotoba-whisper](https://github.com/kotoba-tech/kotoba-whisper)、返答音声の合成（TTS）に [VOICEVOX](https://voicevox.hiroshiba.jp/) を使用します。LiveKit は音声を運ぶ通信基盤で、これらの音声処理サービスや PC 側エージェントはこの Android リポジトリには含まれません。実際に使うサービスや声はエージェントの設定によって異なります。
 
