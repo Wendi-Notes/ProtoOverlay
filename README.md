@@ -86,6 +86,14 @@ LiveKit は主にリアルタイムの音声・映像・データ通信を担い
 
 > **音声出力について:** スマートフォンで AI の返答音声を聞くには、PC 側エージェントで TTS と使用する声を設定し、生成した音声を LiveKit に送る必要があります。未設定の場合、アプリに AI の返答音声は届きません。
 
+## 音声処理の構成例（PC 側）
+
+<p align="center"><img src="docs/images/voice-processing.svg" width="100%" alt="Android の音声を LiveKit 経由で PC 側エージェントに送り、kotoba-whisper で認識、VOICEVOX で返答音声を合成してスマートフォンに戻す構成例"></p>
+
+著者が使用する PC 側の構成例では、音声認識（STT）に [kotoba-whisper](https://github.com/kotoba-tech/kotoba-whisper)、返答音声の合成（TTS）に [VOICEVOX](https://voicevox.hiroshiba.jp/) を使用します。LiveKit は音声を運ぶ通信基盤で、これらの音声処理サービスや PC 側エージェントはこの Android リポジトリには含まれません。実際に使うサービスや声はエージェントの設定によって異なります。
+
+VOICEVOX を利用するときは、[ソフトウェア利用規約](https://voicevox.hiroshiba.jp/term/)と選択した音声ライブラリの規約を確認し、必要なクレジットを表記してください。
+
 ## まず試す（APK）
 
 1. [Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) から APK をダウンロードします。リリースがまだない場合は、配布用 APK は未公開です。
