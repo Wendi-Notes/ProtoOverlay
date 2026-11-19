@@ -1,0 +1,11 @@
+ProtoOverlay
+Copyright 2026 Wendi-Notes
+
+The original work in this repository is made available under the Apache
+License, Version 2.0. See the LICENSE file.
+
+Third-party software and assets are not relicensed by this notice. Their
+respective copyright and license terms continue to apply. In particular,
+LiveKit, Kotlin, Android tooling, and bundled character artwork are subject
+to the terms of their respective owners. Consult the dependency metadata
+and upstream notices before redistributing a build.

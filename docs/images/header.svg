@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+  <title id="title">ProtoOverlay</title>
+  <desc id="desc">An Android mascot companion connecting to an AI agent on your PC.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172638"/>
+      <stop offset="1" stop-color="#3b2e23"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#273b4d"/>
+      <stop offset="1" stop-color="#4c4031"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#080e15" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="560" rx="34" fill="url(#bg)"/>
+  <circle cx="1050" cy="90" r="180" fill="#7fd8ec" opacity=".07"/>
+  <circle cx="190" cy="520" r="220" fill="#e0b26f" opacity=".08"/>
+
+  <g font-family="Segoe UI, Noto Sans, sans-serif">
+    <text x="88" y="115" fill="#7fd8ec" font-size="24" font-weight="700" letter-spacing="5">ANDROID · LIVEKIT · AI COMPANION</text>
+    <text x="82" y="220" fill="#f5f2ec" font-size="76" font-weight="750">ProtoOverlay</text>
+    <text x="88" y="278" fill="#c6d6e0" font-size="29">スマホの画面に住むマスコットと、PCのAIをつなぐ。</text>
+    <g fill="#e7c98f" font-size="21" font-weight="600">
+      <text x="90" y="355">音声で会話</text>
+      <text x="260" y="355">画像・リンクを共有</text>
+      <text x="515" y="355">プライベート接続にも対応</text>
+    </g>
+    <g fill="#aebfca" font-size="17">
+      <text x="90" y="420">Android 11+  ·  Android Studio project  ·  Apache-2.0</text>
+    </g>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="850" y="112" width="310" height="348" rx="42" fill="#d7d0c3"/>
+    <rect x="864" y="126" width="282" height="320" rx="32" fill="#493b2d"/>
+    <rect x="882" y="146" width="246" height="76" rx="19" fill="#624e38" stroke="#a77f48" stroke-width="2"/>
+    <text x="900" y="190" fill="#fffaf0" font-family="Segoe UI, sans-serif" font-size="25" font-weight="700">プロト AI</text>
+    <rect x="1053" y="163" width="57" height="38" rx="19" fill="#26394a" stroke="#7fd8ec" stroke-width="2"/>
+    <circle cx="1073" cy="182" r="7" fill="#7fd8ec"/>
+    <path d="M892 252h219a15 15 0 0 1 15 15v20a15 15 0 0 1-15 15H892a15 15 0 0 1-15-15v-20a15 15 0 0 1 15-15z" fill="#26394a" stroke="#a77f48" stroke-width="2"/>
+    <text x="914" y="281" fill="#e8f4f8" font-family="Segoe UI, sans-serif" font-size="16" font-weight="600">LiveKit で接続中</text>
+    <g transform="translate(916 306)">
+      <path d="M18 53C4 40 6 22 17 10l15-3 15 10 16-8 17 9 10 24-9 24H29z" fill="#eaf7f7" stroke="#5b7485" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M18 53c13-6 34-7 58-2l14 15H29z" fill="#91d9e8" stroke="#5b7485" stroke-width="3"/>
+      <path d="M38 31h5m21 0h5" stroke="#304958" stroke-width="5" stroke-linecap="round"/>
+      <path d="M49 40q7 6 14 0" fill="none" stroke="#587887" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <rect x="880" y="398" width="250" height="29" rx="14" fill="#624e38"/>
+    <text x="899" y="418" fill="#b9c9d2" font-family="Segoe UI, sans-serif" font-size="13">会話と共有はあなたの設定したPCへ</text>
+  </g>
+
+  <g transform="translate(1200 170)" fill="none" stroke="#7fd8ec" stroke-width="5" stroke-linecap="round">
+    <path d="M-20 38h38"/>
+    <path d="m8 26 12 12-12 12"/>
+  </g>
+</svg>

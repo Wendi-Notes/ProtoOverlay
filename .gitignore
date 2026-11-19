@@ -1,0 +1,22 @@
+.gradle/
+.idea/
+.kotlin/
+build/
+app/build/
+local.properties
+*.iml
+captures/
+CLAUDE_GUIDE.md
+
+# Local backups and generated scratch files
+_backup_*/
+_to_delete/
+backup/
+
+# Signing keys and credentials
+*.jks
+*.keystore
+*.p12
+.env
+.env.*
+!.env.example

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- PCのプロトと話す（LiveKit） -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- カメラ・画面共有（見せる） -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- 設定の「Tailscaleを開く」ボタンのため（Android 11以降は、開くアプリを宣言しておく必要がある） -->
+    <queries>
+        <package android:name="com.tailscale.ipn" />
+    </queries>
+
+    <application
+        android:label="プロト"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+
+        <!-- アイコンから起動：権限を確認して常駐を始め、すぐ閉じる -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- プロトをタップすると下から出てくるパネル -->
+        <activity
+            android:name=".PanelActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="com.wendinotes.proto.panel"
+            android:launchMode="singleTask"
+            android:theme="@style/PanelTheme"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 長押し・通知から開く設定 -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="プロトの設定"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- 詳細設定画面 -->
+        <activity
+            android:name=".DetailSettingsActivity"
+            android:exported="false"
+            android:label="各種設定"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- 常駐表示（オーバーレイ） -->
+        <service
+            android:name=".ProtoService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse|microphone|camera|mediaProjection">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="画面の端に常駐するマスコットの表示" />
+        </service>
+
+        <!-- LiveKit 画面共有用の Foreground Service (Android 14+ 必須) -->
+        <service
+            android:name="io.livekit.android.room.track.screencapture.ScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+        <!-- 共有メニューの受け口：スクリーンショット・写真・リンクを「プロト」に共有すると、PCに送って見せる -->
+        <activity
+            android:name=".ShareActivity"
+            android:exported="true"
+            android:label="プロトに見せる"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
