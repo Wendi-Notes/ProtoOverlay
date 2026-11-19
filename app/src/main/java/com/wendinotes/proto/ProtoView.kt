@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable
 import android.os.SystemClock
 import android.view.View
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -141,6 +142,37 @@ class ProtoView(context: Context) : View(context) {
     }
     private val pulsePaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
+    /** くるっと一回転（アプリを閉じて落ちる時）。度 */
+    private var spin = 0f
+    private var spinAnim: android.animation.ValueAnimator? = null
+    fun spinOnce(ms: Long) {
+        spinAnim?.cancel()
+        spinAnim = android.animation.ValueAnimator.ofFloat(0f, 360f).apply {
+            duration = ms
+            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            addUpdateListener { spin = (it.animatedValue as Float) % 360f; invalidate() }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(a: android.animation.Animator) { spin = 0f; invalidate() }
+            })
+            start()
+        }
+    }
+    // 前足の絵（proto_paws.png）の左右それぞれの範囲。付け根を軸に振る
+    private val PAW_L = android.graphics.Rect(164, 181, 300, 308)
+    private val PAW_R = android.graphics.Rect(373, 188, 479, 290)
+    private val pawDst = android.graphics.RectF()
+    private fun drawPaw(c: Canvas, src: android.graphics.Rect, px: Float, py: Float, deg: Float, dy: Float) {
+        c.save()
+        c.translate(0f, dy)
+        c.rotate(deg, px, py)
+        pawDst.set(src)
+        c.drawBitmap(paws, src, pawDst, bodyPaint)
+        c.restore()
+    }
+
+    /** 姿勢（上を向く／しがみつく）をなめらかに変えず、今すぐ合わせる */
+    fun snapLook() { lookK = if (lookUp) 1f else 0f; invalidate() }
+
     private var hopStart = -10_000L
     /** 起きた瞬間などに、ぴょこっと上がる */
     fun hop() { hopStart = SystemClock.uptimeMillis() }
@@ -166,6 +198,7 @@ class ProtoView(context: Context) : View(context) {
         val s = width / IMG_W
 
         c.save()
+        if (spin != 0f) c.rotate(if (mirror) -spin else spin, width / 2f, height * 0.55f)   // くるっと回りながら落ちる
         if (mirror) c.scale(-1f, 1f, width / 2f, 0f)
         c.scale(s, s)
         c.translate(0f, TOP_PAD)
@@ -234,7 +267,12 @@ class ProtoView(context: Context) : View(context) {
         c.restore()
 
         // ---- 前足（パネルのふちにかけている時だけ。体と違って揺れない） ----
-        if (showPaws) c.drawBitmap(paws, 0f, 0f, bodyPaint)
+        if (spinAnim?.isRunning == true) {
+            // 回りながら落ちる時：前足を出して、左右ばらばらにわちゃわちゃ振る
+            val ph = 2 * PI * (t % 200L) / 200.0
+            drawPaw(c, PAW_L, 232f, 190f, (30 * sin(ph)).toFloat(), (-8 * abs(sin(ph))).toFloat())
+            drawPaw(c, PAW_R, 425f, 196f, (30 * sin(ph + PI * 0.8)).toFloat(), (-8 * abs(sin(ph + PI * 0.8))).toFloat())
+        } else if (showPaws) c.drawBitmap(paws, 0f, 0f, bodyPaint)
 
         c.restore()
 

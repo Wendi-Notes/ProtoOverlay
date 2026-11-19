@@ -73,10 +73,11 @@ object ProtoBus {
     /** ダッシュボード（SettingsActivity）が前にいる間 true。バーが閉じてもプロトを画面下へ戻さないため */
     var dashboardVisible = false
 
-    fun setPanelTop(top: Int?) {
+    /** spin=true：アプリ（ダッシュボード）を閉じた時。くるっと回りながら落ちる */
+    fun setPanelTop(top: Int?, spin: Boolean = false) {
         if (panelTop == top) return
         panelTop = top
-        service?.onPanelMoved()
+        service?.onPanelMoved(spin)
     }
 }
 

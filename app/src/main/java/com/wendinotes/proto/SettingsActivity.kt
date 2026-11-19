@@ -185,12 +185,34 @@ class SettingsActivity : Activity() {
         window.decorView.postDelayed({ syncProtoAnchor(); if (onScreen) renderHistory() }, 400)
     }
 
+    /**
+     * 画面の入力を失った瞬間（ホームへ戻るジェスチャーの始まり・通知を引き下ろした時など）。
+     * onPause はジェスチャーの動きが終わってから（約1秒後）なので、ここで先に落とし始める。
+     * 戻ってきて入力が戻ったら、またチャット履歴の箱のふちへ戻す。
+     */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            if (onScreen) { ProtoBus.dashboardVisible = true; syncProtoAnchor() }
+        } else if (onScreen && !isChangingConfigurations) {
+            ProtoBus.setPanelTop(null, spin = true)
+        }
+    }
+
+    /** ホームボタン等でアプリを離れる瞬間（onPause より先に来る）。取り残されないよう、すぐ落ち始める */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        onScreen = false
+        ProtoBus.dashboardVisible = false
+        ProtoBus.setPanelTop(null, spin = true)
+    }
+
     override fun onPause() {
         super.onPause()
         onScreen = false
         ProtoBus.dashboardVisible = false
         if (ProtoBus.onConn === connHook) ProtoBus.onConn = null
-        ProtoBus.setPanelTop(null)
+        ProtoBus.setPanelTop(null, spin = true)   // アプリを閉じた：くるっと回りながら画面の下へ落ちる
     }
 
     private fun syncProtoAnchor() {

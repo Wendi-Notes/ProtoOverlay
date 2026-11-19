@@ -92,6 +92,7 @@ class ProtoService : Service() {
     private var testThinkUntil = 0L  // 設定のテストボタン用
     private var testTalkUntil = 0L
     private var happyUntil = 0L      // にっこり（うれしい時。ぴょんと跳ねる）
+    private var fallUntil = 0L       // 落ちている間（「わっ」の見開き目）
     private var battReady = false
     private var nextBlink = 0L
     private var blinkUntil = 0L
@@ -197,6 +198,10 @@ class ProtoService : Service() {
         update()
         handler.post(tick)
         ProtoBus.onConn?.invoke()   // ダッシュボードのスイッチ・表示を「起動中」に合わせる
+        // ダッシュボードでスイッチを入れた時は、その場でPCにつなぐ（アプリが前にいる今ならマイクも使える）
+        handler.postDelayed({
+            if (ProtoBus.service === this && (ProtoBus.dashboardVisible || ProtoBus.panel != null) && !ProtoBus.paused) call?.connect()
+        }, 300)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -272,9 +277,9 @@ class ProtoService : Service() {
     // ------------------------------------------------------------------ 位置
 
     /** パネルが開いた・閉じた・動いた（キーボードが出た等）とき */
-    fun onPanelMoved() = applyLayout(true)
+    fun onPanelMoved(spin: Boolean = false) = applyLayout(true, spin)
 
-    private fun applyLayout(animate: Boolean) {
+    private fun applyLayout(animate: Boolean, spin: Boolean = false) {
         if (!::view.isInitialized) return
         val b = wm.currentWindowMetrics.bounds
         val density = resources.displayMetrics.density
@@ -301,7 +306,28 @@ class ProtoService : Service() {
         val targetY = anchor - cut
 
         yAnim?.cancel()
-        if (animate && added && lp.y != targetY) {
+        val falling = animate && added && panelTop == null && targetY - lp.y > h / 6
+        if (falling) {
+            // 画面の下へ戻る時：重力っぽく落ちる（落ちている間は「わっ」の顔）。アプリを閉じた時はくるっと回りながら
+            val ms = if (spin) 560L else 440L
+            fallUntil = SystemClock.elapsedRealtime() + ms
+            if (spin) view.spinOnce(ms)
+            yAnim = ValueAnimator.ofInt(lp.y, targetY).apply {
+                duration = ms
+                interpolator = android.view.animation.AccelerateInterpolator(1.6f)
+                addUpdateListener {
+                    lp.y = it.animatedValue as Int
+                    if (added) { wm.updateViewLayout(view, lp); syncTouch() }
+                }
+                addListener(object : android.animation.AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(a: android.animation.Animator) {
+                        view.snapLook()   // 着地した時に姿勢もそろえる（着いてから沈んで「浮いて」見えないように）
+                        view.hop()        // 着地でぴょこっ
+                    }
+                })
+                start()
+            }
+        } else if (animate && added && lp.y != targetY) {
             yAnim = ValueAnimator.ofInt(lp.y, targetY).apply {
                 duration = 250
                 interpolator = DecelerateInterpolator()
@@ -477,6 +503,7 @@ class ProtoService : Service() {
             }
             ProtoBus.rec -> (if (ProtoBus.shareOn) ProtoView.Face.CAST else ProtoView.Face.REC) to ProtoView.Motion.BOB  // 見せてもらっている：わくわく
             thinking -> ProtoView.Face.BLINK to ProtoView.Motion.SWAY_SLOW   // 考え中：細目で「？」
+            SystemClock.elapsedRealtime() < fallUntil -> ProtoView.Face.WIDE to ProtoView.Motion.SWAY   // 落ちている：わっ
             grabbed || now < wideUntil -> ProtoView.Face.WIDE to ProtoView.Motion.SWAY
             asleep -> ProtoView.Face.SLEEP to (if (dozing) ProtoView.Motion.DOZE else ProtoView.Motion.BREATH)
             now < happyUntil -> ProtoView.Face.HAPPY to ProtoView.Motion.BOB  // うれしい：ぴょこぴょこ
