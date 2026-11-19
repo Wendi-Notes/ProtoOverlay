@@ -44,6 +44,12 @@ These are views of the dashboard, appearance settings, sleep and idle settings, 
 
 **Assets:** [Download preview images and app icon](docs/downloads/ProtoOverlay-Preview-Assets.zip) · [Screenshot details](docs/SCREENSHOTS.md)
 
+### On a real device
+
+<p align="center"><img src="docs/images/demo/tap.gif" width="320" alt="Tapping Proto in the bottom-left brings up the input bar"></p>
+
+Tap Proto dozing in the bottom-left corner and it rises with the input bar, clinging to its edge. From the bar you can send text or links, toggle the camera, and see the conversation. Close it and Proto goes back to the screen edge.
+
 ## Features
 
 - Persistent animated mascot overlay
