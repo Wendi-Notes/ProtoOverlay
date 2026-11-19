@@ -66,7 +66,9 @@ Tailscale can provide private reachability between the phone and PC. The app doe
 
 ## Voice processing options
 
-LiveKit primarily handles real-time audio, video, and data transport. Speech-to-text (STT) and text-to-speech (TTS) can be provided by external services integrated with LiveKit Agents, or—depending on the PC-side agent's implementation—by switching providers or running STT, an LLM, and TTS locally on the PC. Costs depend on the selected services and plans. These choices are configured in the PC-side agent; the Android app does not let you switch voice-processing methods.
+LiveKit primarily handles real-time audio, video, and data transport. The STT and TTS services depend on the PC-side agent and LiveKit Agents configuration; LiveKit itself does not provide them universally. If the services used in a standard setup do not fit your needs or budget, consider switching to another provider supported by the agent or running STT, an LLM, and TTS locally on the PC. Costs depend on the selected services and plans. These choices are configured in the PC-side agent; the Android app does not let you switch voice-processing methods.
+
+> **Voice output:** To hear the AI's spoken replies on your phone, configure TTS and a voice in the PC-side agent and have it publish the generated audio to LiveKit. Without that setup, the app receives no spoken AI replies. The setup and supported voice services depend on the PC-side agent.
 
 See the [user setup guide](docs/SETUP.md) before installing.
 
