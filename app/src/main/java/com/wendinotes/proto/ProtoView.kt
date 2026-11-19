@@ -181,7 +181,7 @@ class ProtoView(context: Context) : View(context) {
             Motion.SWAY_FAST -> { dy = 9f; rot = -2f + 4f * wave(t, 2000) }
             Motion.BOB -> { dy = 7f + 18f * wave(t, 450) }   // わくわく：ぴょこぴょこ（見せてもらっている時・うれしい時）
             // しゃべる：跳ねずに、顔を上に向けて口をぱくぱく（口は ProtoService が切り替える）
-            Motion.TALK_UP -> { dy = 9f; rot = -8f + 0.8f * wave(t, 900) }
+            Motion.TALK_UP -> { dy = 0f; rot = -10f + 0.8f * wave(t, 900) }   // 口がバーや前足に隠れないよう、少し高く上げる
             Motion.BREATH -> { dy = 9f + 7f * wave(t, 4500) }
             Motion.DROOP -> { dy = 22f + 4f * wave(t, 5000); rot = -0.6f + 1.2f * wave(t, 5000) }
             Motion.DOZE -> {

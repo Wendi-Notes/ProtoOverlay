@@ -4,6 +4,10 @@
   <p><a href="README.en.md">English</a> · <a href="https://github.com/Wendi-Notes/ProtoOverlay/releases">ダウンロード</a> · <a href="docs/SETUP.md">セットアップガイド</a></p>
 </div>
 
+<p align="center">
+  <img src="docs/images/demo/idle.gif" width="200" alt="待機"> <img src="docs/images/demo/talk.gif" width="200" alt="おしゃべり"> <img src="docs/images/demo/think.gif" width="200" alt="考え中"> <img src="docs/images/demo/sleep.gif" width="200" alt="居眠り">
+</p>
+
 > **開発中:** ProtoOverlay は PC 側のエージェントや LiveKit サーバーを含みません。APK を入れるだけで会話が始まる製品ではなく、PC 側の接続環境を別途用意する必要があります。
 
 ## ProtoOverlay とは
@@ -11,6 +15,42 @@
 ProtoOverlay は Android 11 以降のスマートフォンにマスコット「プロト」をオーバーレイ表示し、LiveKit を通じて PC 側の AI エージェントと音声・テキスト・画像などをやりとりするコンパニオンアプリです。Tailscale を使って PC 側の接続先をプライベートに公開する構成を想定しています。
 
 ![実機の設定・ダッシュボード画面](docs/images/settings-screen.png)
+
+## プロトの表情と動き
+
+プロトは画面の端からのぞいたり、操作バーのふちに前足をかけてしがみついたりしながら、会話の状態に合わせて表情と動きを変えます。絵はすべて 480×309 の透過 PNG パーツ（体・目・口・前足・マーク）の重ね合わせで、動きはアプリ内で計算しています。
+
+<table>
+<tr>
+<td align="center"><img src="docs/images/demo/idle.gif" width="200" alt="待機：ゆらゆら＋まばたき"><br><sub>待機：ゆらゆら＋まばたき</sub></td><td align="center"><img src="docs/images/demo/talk.gif" width="200" alt="おしゃべり：上を向いて口ぱくぱく"><br><sub>おしゃべり：上を向いて口ぱくぱく</sub></td><td align="center"><img src="docs/images/demo/think.gif" width="200" alt="考え中：頭の上に「？」"><br><sub>考え中：頭の上に「？」</sub></td><td align="center"><img src="docs/images/demo/listen.gif" width="200" alt="聞き取り中：「ハッ」の線"><br><sub>聞き取り中：「ハッ」の線</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/images/demo/happy.gif" width="200" alt="うれしい：ぴょこぴょこ"><br><sub>うれしい：ぴょこぴょこ</sub></td><td align="center"><img src="docs/images/demo/sleep.gif" width="200" alt="居眠り：こっくり → Zzz"><br><sub>居眠り：こっくり → Zzz</sub></td><td align="center"><img src="docs/images/demo/rec.gif" width="200" alt="カメラ中：●REC"><br><sub>カメラ中：●REC</sub></td><td align="center"><img src="docs/images/demo/charge.gif" width="200" alt="充電中：おでこに電池"><br><sub>充電中：おでこに電池</sub></td>
+</tr>
+</table>
+
+ほかにも、電池が少ないときの赤い点滅、夜のおやすみタイム、触らないと眠くなる、充電を始めると喜ぶ、などの反応があります。
+
+## 実機スクリーンショット
+
+スマートフォン画面のダッシュボード、表示設定、睡眠設定、接続設定です。接続設定の画面では、実際の Tailscale hostname を例示用アドレスに置き換えています。
+
+<table>
+<tr>
+<td align="center"><a href="docs/images/screenshots/dashboard.png"><img src="docs/images/screenshots/dashboard.png" width="220" alt="ダッシュボード"><br><sub>ダッシュボード</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/appearance-settings.png"><img src="docs/images/screenshots/appearance-settings.png" width="220" alt="表示設定"><br><sub>表示・色の設定</sub></a></td>
+</tr>
+<tr>
+<td align="center"><a href="docs/images/screenshots/sleep-settings.png"><img src="docs/images/screenshots/sleep-settings.png" width="220" alt="睡眠設定"><br><sub>睡眠・居眠りの設定</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/connection-settings-redacted.png"><img src="docs/images/screenshots/connection-settings-redacted.png" width="220" alt="接続設定（個人情報を除去）"><br><sub>接続・権限の設定（hostname を例示用に置換）</sub></a></td>
+</tr>
+</table>
+
+<p align="center">
+  <a href="docs/images/proto-app-icon.png"><img src="docs/images/proto-app-icon.png" width="128" alt="ProtoOverlay アプリアイコン"></a>
+</p>
+
+**素材:** [プレビュー画像とアイコンをまとめてダウンロード](docs/downloads/ProtoOverlay-Preview-Assets.zip) · [スクリーンショット一覧](docs/SCREENSHOTS.md)
 
 ## 主な機能
 

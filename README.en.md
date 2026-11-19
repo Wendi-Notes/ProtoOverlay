@@ -2,9 +2,47 @@
 
 ProtoOverlay is an Android companion app that places the animated mascot “Proto” over other apps and connects it to a PC-side AI agent through LiveKit.
 
+<p align="center">
+  <img src="docs/images/demo/idle.gif" width="200" alt="Idle"> <img src="docs/images/demo/talk.gif" width="200" alt="Talking"> <img src="docs/images/demo/think.gif" width="200" alt="Thinking"> <img src="docs/images/demo/sleep.gif" width="200" alt="Dozing">
+</p>
+
 > **In development:** This repository contains the Android app only. It does not include the PC agent, token endpoint, or LiveKit server. Those components must be set up separately.
 
 ![ProtoOverlay dashboard on a connected Android device](docs/images/settings-screen.png)
+
+## Proto’s expressions and motions
+
+Proto peeks from the screen edge or clings to the edge of the input bar, and changes its face and motion with the conversation state. Every frame is drawn by layering 480×309 transparent PNG parts (body, eyes, mouth, paws, badges); the motion is computed in the app.
+
+<table>
+<tr>
+<td align="center"><img src="docs/images/demo/idle.gif" width="200" alt="Idle: sway + blink"><br><sub>Idle: sway + blink</sub></td><td align="center"><img src="docs/images/demo/talk.gif" width="200" alt="Talking: looks up, mouth flaps"><br><sub>Talking: looks up, mouth flaps</sub></td><td align="center"><img src="docs/images/demo/think.gif" width="200" alt="Thinking: “?” above the head"><br><sub>Thinking: “?” above the head</sub></td><td align="center"><img src="docs/images/demo/listen.gif" width="200" alt="Listening: alert lines"><br><sub>Listening: alert lines</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/images/demo/happy.gif" width="200" alt="Happy: hops"><br><sub>Happy: hops</sub></td><td align="center"><img src="docs/images/demo/sleep.gif" width="200" alt="Dozing: nods off → Zzz"><br><sub>Dozing: nods off → Zzz</sub></td><td align="center"><img src="docs/images/demo/rec.gif" width="200" alt="Camera on: ●REC"><br><sub>Camera on: ●REC</sub></td><td align="center"><img src="docs/images/demo/charge.gif" width="200" alt="Charging: battery on the forehead"><br><sub>Charging: battery on the forehead</sub></td>
+</tr>
+</table>
+
+## Emulator screenshots
+
+These are views of the dashboard, appearance settings, sleep and idle settings, and connection settings on Android. The private hostname in the connection screenshot has been replaced with an example address.
+
+<table>
+<tr>
+<td align="center"><a href="docs/images/screenshots/dashboard.png"><img src="docs/images/screenshots/dashboard.png" width="220" alt="Dashboard"><br><sub>Dashboard</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/appearance-settings.png"><img src="docs/images/screenshots/appearance-settings.png" width="220" alt="Appearance settings"><br><sub>Appearance and color settings</sub></a></td>
+</tr>
+<tr>
+<td align="center"><a href="docs/images/screenshots/sleep-settings.png"><img src="docs/images/screenshots/sleep-settings.png" width="220" alt="Sleep and idle settings"><br><sub>Sleep and idle settings</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/connection-settings-redacted.png"><img src="docs/images/screenshots/connection-settings-redacted.png" width="220" alt="Redacted connection settings"><br><sub>Connection and permission settings (example hostname)</sub></a></td>
+</tr>
+</table>
+
+<p align="center">
+  <a href="docs/images/proto-app-icon.png"><img src="docs/images/proto-app-icon.png" width="128" alt="ProtoOverlay app icon"></a>
+</p>
+
+**Assets:** [Download preview images and app icon](docs/downloads/ProtoOverlay-Preview-Assets.zip) · [Screenshot details](docs/SCREENSHOTS.md)
 
 ## Features
 
