@@ -167,6 +167,7 @@ class ProtoService : Service() {
             fitInsetsTypes = 0
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             title = name
+            noMoveAnimation(this)
         }
         lp = overlayLp(false, "Proto")
         touchView = android.view.View(winCtx)
@@ -275,8 +276,29 @@ class ProtoService : Service() {
 
     // ------------------------------------------------------------------ 位置
 
+    /** アプリ（ダッシュボード）が開くアニメの間だけプロトを隠す（先にふちへ移って浮いて見えないように） */
+    fun hideForOpen(hide: Boolean) {
+        if (!::view.isInitialized) return
+        view.visibility = if (hide) android.view.View.INVISIBLE else android.view.View.VISIBLE
+    }
+
+    /**
+     * 窓を動かした時に Android 本体が勝手に滑らかに動かすのを止める（PRIVATE_FLAG_NO_MOVE_ANIMATION）。
+     * 新しい Android（エミュレーター）で、アプリを開いた時に下からエレベーターのように上がっていた原因。
+     * 非公開の設定なので、使えない端末では何もしない（動きは自前の ProtoAnim で付けている）
+     */
+    private fun noMoveAnimation(p: WindowManager.LayoutParams) {
+        try {
+            val f = WindowManager.LayoutParams::class.java.getField("privateFlags")
+            f.setInt(p, f.getInt(p) or 0x00000040)
+        } catch (_: Throwable) {}
+    }
+
     /** パネルが開いた・閉じた・動いた（キーボードが出た等）とき */
-    fun onPanelMoved(spin: Boolean = false) = applyLayout(true, spin)
+    fun onPanelMoved(spin: Boolean = false, instant: Boolean = false) {
+        applyLayout(!instant, spin)
+        if (instant) view.snapLook()   // 姿勢（しがみつく）もすぐそろえる
+    }
 
     private fun applyLayout(animate: Boolean, spin: Boolean = false) {
         if (!::view.isInitialized) return
@@ -308,10 +330,11 @@ class ProtoService : Service() {
         val falling = animate && added && panelTop == null && targetY - lp.y > h / 6
         if (falling) {
             // 画面の下へ戻る時：前足をぱたぱたさせながら落ちる（「わっ」の顔）。
-            // 前足を出しておくと体の左下の欠けがふさがるので、回転はやめてシンプルにした
-            val ms = 380L
+            // バーを閉じた時はまっすぐ 380ms。アプリ（ダッシュボード）を閉じた時だけ、くるっと回りながら 560ms
+            val ms = if (spin) 560L else 380L
             fallUntil = SystemClock.elapsedRealtime() + ms
             view.flail(ms)
+            if (spin) view.spinOnce(ms)
             yAnim = ProtoAnim(lp.y, targetY, ms, ProtoAnim.easeIn, { y ->
                 lp.y = y
                 if (added) { wm.updateViewLayout(view, lp); syncTouch() }

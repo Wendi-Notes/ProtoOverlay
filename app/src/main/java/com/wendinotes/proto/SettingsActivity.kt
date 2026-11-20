@@ -178,6 +178,11 @@ class SettingsActivity : Activity() {
         if (BarTheme.app(this).name + "/" + BarTheme.accent(this).name != builtTheme) { recreate(); return }
         onScreen = true
         ProtoBus.dashboardVisible = true
+        // 開くアニメの間はプロトを隠し、開き終わったら（onEnterAnimationComplete）ふちにつかまった姿で出す。
+        // 知らせが来ない時のために 800ms で必ず出す（アニメがオフの端末ではすぐ知らせが来る）
+        ProtoBus.service?.hideForOpen(true)
+        window.decorView.removeCallbacks(revealProto)
+        window.decorView.postDelayed(revealProto, 800)
         ProtoBus.onConn = connHook
         ProtoBus.addHistoryListener(historyHook)   // 履歴が空のまま開いても、新しい発言ですぐ書き換わるように
         if (ProtoBus.service != null && !ProtoBus.paused) ProtoBus.service?.call?.connect()
@@ -185,6 +190,20 @@ class SettingsActivity : Activity() {
         renderHistory()
         syncProtoAnchor()
         window.decorView.postDelayed({ syncProtoAnchor(); if (onScreen) renderHistory() }, 400)
+    }
+
+    /** 開くアニメが終わった時（Android が知らせてくれる） */
+    override fun onEnterAnimationComplete() {
+        super.onEnterAnimationComplete()
+        window.decorView.removeCallbacks(revealProto)
+        revealProto.run()
+    }
+
+    /** プロトをふちへ置いてから見せる */
+    private val revealProto = Runnable {
+        if (!onScreen) return@Runnable
+        syncProtoAnchor()
+        window.decorView.post { ProtoBus.service?.hideForOpen(false) }
     }
 
     /**
@@ -204,6 +223,8 @@ class SettingsActivity : Activity() {
     /** ホームボタン等でアプリを離れる瞬間（onPause より先に来る）。取り残されないよう、すぐ落ち始める */
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        window.decorView.removeCallbacks(revealProto)
+        ProtoBus.service?.hideForOpen(false)
         onScreen = false
         ProtoBus.dashboardVisible = false
         ProtoBus.setPanelTop(null, spin = true)
@@ -211,6 +232,8 @@ class SettingsActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
+        window.decorView.removeCallbacks(revealProto)
+        ProtoBus.service?.hideForOpen(false)   // 隠したまま閉じないように（回りながら落ちるのを見せる）
         onScreen = false
         ProtoBus.dashboardVisible = false
         if (ProtoBus.onConn === connHook) ProtoBus.onConn = null
@@ -224,7 +247,7 @@ class SettingsActivity : Activity() {
             if (historySv.height == 0) return@post
             val loc = IntArray(2)
             historySv.getLocationOnScreen(loc)
-            ProtoBus.setPanelTop(loc[1])
+            ProtoBus.setPanelTop(loc[1], instant = true)   // アプリを開いた時は、せり上がらずにすぐ箱のふちへ
         }
     }
 

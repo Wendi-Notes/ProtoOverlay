@@ -142,20 +142,17 @@ class ProtoView(context: Context) : View(context) {
     }
     private val pulsePaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
-    /** くるっと一回転（アプリを閉じて落ちる時）。度 */
-    private var spin = 0f
-    private var spinAnim: android.animation.ValueAnimator? = null
-    fun spinOnce(ms: Long) {
-        spinAnim?.cancel()
-        spinAnim = android.animation.ValueAnimator.ofFloat(0f, 360f).apply {
-            duration = ms
-            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
-            addUpdateListener { spin = (it.animatedValue as Float) % 360f; invalidate() }
-            addListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(a: android.animation.Animator) { spin = 0f; invalidate() }
-            })
-            start()
-        }
+    /** くるっと一回転（アプリを閉じて落ちる時）。自前の時計で回す（ValueAnimator は端末設定で一瞬になるため） */
+    private var spinStart = 0L
+    private var spinMs = 0L
+    fun spinOnce(ms: Long) { spinStart = SystemClock.uptimeMillis(); spinMs = ms; invalidate() }
+    /** 今の回転角（度）。回っていなければ 0 */
+    private fun spinDeg(t: Long): Float {
+        if (spinMs <= 0L) return 0f
+        val k = (t - spinStart).toFloat() / spinMs
+        if (k < 0f || k >= 1f) return 0f
+        val e = if (k < 0.5f) 2 * k * k else 1 - 2 * (1 - k) * (1 - k)   // はじめと終わりはゆっくり
+        return 360f * e
     }
     /** 落ちている間（バーを閉じた時も、アプリを閉じた時も）前足をわちゃわちゃ振る */
     private var flailUntil = 0L
@@ -201,6 +198,7 @@ class ProtoView(context: Context) : View(context) {
         val s = width / IMG_W
 
         c.save()
+        val spin = spinDeg(t)
         if (spin != 0f) c.rotate(if (mirror) -spin else spin, width / 2f, height * 0.55f)   // くるっと回りながら落ちる
         if (mirror) c.scale(-1f, 1f, width / 2f, 0f)
         c.scale(s, s)

@@ -136,6 +136,14 @@ AI・人が改造するときに最初に読むファイル。
   - ProtoAnim.kt（Choreographer＋経過時間で動く自前アニメ）を作り、ProtoService の yAnim（落下・上がる）と xAnim（左右へ飛び移る）を置き換えた。ValueAnimator は使わない
   - 動きをシンプルに：回転（spinOnce）はやめ、落下は 380ms（だんだん速く）。前足は左右交互に ±12°・320ms周期でぱたぱた（上下のがたつき無し）。前足を出していれば体の左下の欠けは隠れる
   - 前の版：backup\*.kt.20261120_1925_clock
+- 2026-11-20 回転を復活：アプリ（ダッシュボード）を閉じた時だけ、くるっと一回転しながら 560ms で落ちる（バーを閉じた時はまっすぐ 380ms）。回転も ProtoView.spinDeg（経過時間で角度を計算）にして ValueAnimator をやめた。前足のぱたぱたはどちらも同じ
+  - 前の版：backup\*.kt.20261120_2015_spinback
+- 2026-11-20 アプリ（ダッシュボード）を開いた時の「下からせり上がる」動きをなくした：SettingsActivity.syncProtoAnchor → ProtoBus.setPanelTop(top, instant = true) → ProtoService.onPanelMoved でアニメなし＋snapLook。バーを開いた時の上がり方はそのまま
+  - 前の版：backup\*.kt.20261120_2020_noriseanim
+- 2026-11-20 追記：最新版のエミュレーターではまだ下から上がっていた → Android 本体の「窓が動いた時の自動アニメ」と推定。ProtoService.noMoveAnimation で重ねて表示の窓に PRIVATE_FLAG_NO_MOVE_ANIMATION(0x40) を付けた（リフレクション、失敗したら何もしない）
+  - 前の版：backup\ProtoService.kt.20261120_2025_nomoveanim
+- 2026-11-20 アプリを開く時：新しい Android では開くアニメより先にプロトがふちへ移って浮いて見えた → SettingsActivity.onResume でプロトを隠し（ProtoService.hideForOpen）、onEnterAnimationComplete（来なければ 800ms）でふちへ置いてから見せる。onPause・onUserLeaveHint では必ず見せる（回りながら落ちるのを見せるため）
+  - 前の版：backup\*.kt.20261120_2035_hideopen
 
 ## チャット履歴がその場で更新されない問題（2026-11-19）
 - 原因：SettingsActivity.renderHistory() が、履歴が空だと早めに return していて、その後ろの「更新の知らせを受け取る登録」（ProtoBus.onHistory）まで届かなかった。空のまま開くと、新しい発言が来ても描き直されなかった。さらに onHistory は1つしか入れられず、バー（PanelActivity）が閉じる時に消すこともあった。
