@@ -157,6 +157,9 @@ class ProtoView(context: Context) : View(context) {
             start()
         }
     }
+    /** 落ちている間（バーを閉じた時も、アプリを閉じた時も）前足をわちゃわちゃ振る */
+    private var flailUntil = 0L
+    fun flail(ms: Long) { flailUntil = SystemClock.uptimeMillis() + ms; invalidate() }
     // 前足の絵（proto_paws.png）の左右それぞれの範囲。付け根を軸に振る
     private val PAW_L = android.graphics.Rect(164, 181, 300, 308)
     private val PAW_R = android.graphics.Rect(373, 188, 479, 290)
@@ -267,8 +270,8 @@ class ProtoView(context: Context) : View(context) {
         c.restore()
 
         // ---- 前足（パネルのふちにかけている時だけ。体と違って揺れない） ----
-        if (spinAnim?.isRunning == true) {
-            // 回りながら落ちる時：前足を出して、左右ばらばらにわちゃわちゃ振る
+        if (spinAnim?.isRunning == true || t < flailUntil) {
+            // 落ちる時（「わっ！」）：前足を出して、左右ばらばらにわちゃわちゃ振る
             val ph = 2 * PI * (t % 200L) / 200.0
             drawPaw(c, PAW_L, 232f, 190f, (30 * sin(ph)).toFloat(), (-8 * abs(sin(ph))).toFloat())
             drawPaw(c, PAW_R, 425f, 196f, (30 * sin(ph + PI * 0.8)).toFloat(), (-8 * abs(sin(ph + PI * 0.8))).toFloat())

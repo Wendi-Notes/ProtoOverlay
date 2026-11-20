@@ -313,6 +313,7 @@ class ProtoService : Service() {
             val ms = if (spin) 560L else 440L
             fallUntil = SystemClock.elapsedRealtime() + ms
             if (spin) view.spinOnce(ms)
+            view.flail(ms)   // バーを閉じて落ちる時も前足を振る（しがみつきポーズのまま落ちないように）
             yAnim = ValueAnimator.ofInt(lp.y, targetY).apply {
                 duration = ms
                 interpolator = android.view.animation.AccelerateInterpolator(1.6f)

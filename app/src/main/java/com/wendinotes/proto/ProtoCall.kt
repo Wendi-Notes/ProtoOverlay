@@ -66,7 +66,6 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     // Audio focus tracks playback priority, not microphone use. Video/music playback must
     // not disable Proto's microphone; actual competing microphone capture is detected below.
 
-
     private val recordingCallback = object : AudioManager.AudioRecordingCallback() {
         override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>) {
             updateMicrophoneHandoff(configs)
@@ -115,24 +114,18 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         if (ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ProtoBus.setConn(ProtoBus.Conn.NO_MIC); return
         }
-        registerMicObservers()
         ProtoBus.setConn(ProtoBus.Conn.CONNECTING)
         svc.setMicFgs(true)   // マイクを使う常駐に切り替える（バーが開いている＝アプリが前にいる今のうちに）
         job = scope.launch {
             try {
                 val (url, token) = withContext(Dispatchers.IO) { fetchToken(base) }
-                // 音は「メディアの音量」で出す（通話の音にすると音量が通話側になり、音質も下がるため）
+                // 受信音声を「メディアの音」にする（標準は通話の音になり、音楽の音が小さくなる等の影響がある）
                 val r = LiveKit.create(
                     appContext = ctx.applicationContext,
                     overrides = LiveKitOverrides(audioOptions = AudioOptions(audioOutputType = AudioType.MediaAudioType())),
                 )
                 // カメラは外カメラ（見せたいものを映す）
-                // PCで見るのは「これ見て」の時の1枚だけなので、640×480・毎秒10コマで十分。
-                // 高画質のまま送ると、PC側が1コマずつほどく処理で重くなり、会話まで遅くなる
-                r.videoTrackCaptureDefaults = LocalVideoTrackOptions(
-                    position = CameraPosition.BACK,
-                    captureParams = VideoCaptureParameter(640, 480, 10),
-                )
+                r.videoTrackCaptureDefaults = LocalVideoTrackOptions(position = CameraPosition.BACK)
                 room = r
                 // 会話の文字起こし（PC側が送ってくる）をチャット履歴へ
                 r.registerTextStreamHandler("lk.transcription") { reader, from ->
@@ -172,6 +165,8 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     private fun cleanup() {
         room?.release()
         room = null
+        screenTrack?.dispose()
+        screenTrack = null
         lastIcon = ""
         ProtoBus.talking = false
         ProtoBus.thinking = false
@@ -180,6 +175,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         ProtoBus.shareOn = false
         svc.setCamFgs(false)
         svc.setMicFgs(false)
+        svc.setShareFgs(false)
     }
 
     /**
@@ -205,6 +201,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
 
     /** リモート参加者の受信音声だけをミュートする。スマホの他アプリの音量には影響しない */
     fun setSpeakerMuted(muted: Boolean) {
+        ProtoBus.speakerMuted = muted
         room?.remoteParticipants?.values?.forEach { participant ->
             participant.trackPublications.values.forEach { publication ->
                 applySpeakerMute(publication.track, muted)
@@ -329,7 +326,6 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     fun sendText(text: String) {
         val r = room ?: return
         touch()
-        ProtoBus.addHistory("あなた（文字）", text)
         scope.launch {
             try {
                 r.localParticipant.sendText(text, StreamTextOptions(topic = "lk.chat"))
@@ -339,35 +335,31 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         }
     }
 
-    /**
-     * 共有メニューから受け取った画像（スクリーンショットなど）をPCに送る。
-     * 長辺1024pxのJPEGにして base64 にし、トピック「proto.image」の文字ストリームで送る（PC側が見て話す）。
-     * つながっていなければ、つないでから送る。
-     */
-    fun sendImage(uri: android.net.Uri, onDone: (Boolean) -> Unit) {
+    /** 共有メニューから受け取った画像データを見せる。つながっていなければ、つないでから */
+    fun sendImageConnecting(bytes: ByteArray, mimeType: String, onDone: (Boolean) -> Unit) {
         scope.launch {
-            val b64 = withContext(Dispatchers.IO) {
-                try {
-                    val src = ctx.contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it) }
-                        ?: return@withContext null
-                    val k = 1024f / maxOf(src.width, src.height)
-                    val bmp = if (k < 1f) android.graphics.Bitmap.createScaledBitmap(src, (src.width * k).toInt(), (src.height * k).toInt(), true) else src
-                    val out = java.io.ByteArrayOutputStream()
-                    bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, out)
-                    android.util.Base64.encodeToString(out.toByteArray(), android.util.Base64.NO_WRAP)
-                } catch (e: Exception) {
-                    Log.w(TAG, "画像を読めなかった", e); null
-                }
-            }
-            if (b64 == null) { onDone(false); return@launch }
-            val r = waitConnected() ?: run { onDone(false); return@launch }
-            touch()
-            ProtoBus.addHistory("あなた（画像）", "画像を見せた")
+            if (waitConnected() == null) { onDone(false); return@launch }
+            sendImage(bytes, mimeType)
+            onDone(true)
+        }
+    }
+
+    /** 画面を覆う画像を送る（DataStream lk.chat.image） */
+    fun sendImage(bytes: ByteArray, mimeType: String) {
+        val r = room ?: return
+        touch()
+        scope.launch {
             try {
-                r.localParticipant.sendText(b64, StreamTextOptions(topic = "proto.image"))
-                onDone(true)
+                ProtoBus.addHistory("あなた（画像）", "画像を見せた")
+                r.localParticipant.sendText(
+                    text = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP),
+                    options = StreamTextOptions(
+                        topic = "lk.chat.image",
+                        attributes = mapOf("mime" to mimeType),
+                    ),
+                )
             } catch (e: Exception) {
-                Log.w(TAG, "画像を送れなかった", e); onDone(false)
+                Log.w(TAG, "画像を送れなかった", e)
             }
         }
     }

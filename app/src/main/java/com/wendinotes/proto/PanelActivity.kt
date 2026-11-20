@@ -231,6 +231,22 @@ class PanelActivity : Activity() {
         root.post { report() }
     }
 
+    /**
+     * バーが閉じ始めた瞬間（戻る・ホーム・外をタップ）にすぐ落とし始める。
+     * onPause は閉じるアニメの後に来るので、それを待つと前足をかけたまま一瞬止まって見えていた。
+     */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) {
+            if (!ProtoBus.dashboardVisible) ProtoBus.setPanelTop(null)
+        } else root.post { report() }   // 通知シェードなどから戻った時は、またふちにつかまる
+    }
+
+    override fun onUserLeaveHint() {
+        if (!ProtoBus.dashboardVisible) ProtoBus.setPanelTop(null)
+        super.onUserLeaveHint()
+    }
+
     override fun onPause() {
         resumed = false
         if (!ProtoBus.dashboardVisible) ProtoBus.setPanelTop(null)   // ⚙でダッシュボードへ移った時は、ダッシュボード側の位置を消さない

@@ -39,7 +39,19 @@ class ShareActivity : Activity() {
             val call = svc.call
             if (call == null) { done(false); return@waitService }
             when {
-                image != null -> call.sendImage(image) { ok -> done(ok) }
+                image != null -> {
+                    try {
+                        val bytes = contentResolver.openInputStream(image)?.use { it.readBytes() }
+                        val mime = contentResolver.getType(image) ?: "image/jpeg"
+                        if (bytes != null) {
+                            call.sendImageConnecting(bytes, mime) { ok -> done(ok) }
+                        } else {
+                            done(false)
+                        }
+                    } catch (_: Exception) {
+                        done(false)
+                    }
+                }
                 text.isNotEmpty() -> call.sendTextConnecting(text) { ok -> done(ok) }
                 else -> done(false)
             }
