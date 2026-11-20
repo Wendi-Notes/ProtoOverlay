@@ -270,11 +270,11 @@ class ProtoView(context: Context) : View(context) {
         c.restore()
 
         // ---- 前足（パネルのふちにかけている時だけ。体と違って揺れない） ----
-        if (spinAnim?.isRunning == true || t < flailUntil) {
-            // 落ちる時（「わっ！」）：前足を出して、左右ばらばらにわちゃわちゃ振る
-            val ph = 2 * PI * (t % 200L) / 200.0
-            drawPaw(c, PAW_L, 232f, 190f, (30 * sin(ph)).toFloat(), (-8 * abs(sin(ph))).toFloat())
-            drawPaw(c, PAW_R, 425f, 196f, (30 * sin(ph + PI * 0.8)).toFloat(), (-8 * abs(sin(ph + PI * 0.8))).toFloat())
+        if (t < flailUntil) {
+            // 落ちる時（「わっ！」）：前足を出して、左右交互に小さくぱたぱた（落ち着いた動きにした）
+            val ph = 2 * PI * (t % 320L) / 320.0
+            drawPaw(c, PAW_L, 232f, 190f, (12 * sin(ph)).toFloat(), 0f)
+            drawPaw(c, PAW_R, 425f, 196f, (12 * sin(ph + PI)).toFloat(), 0f)
         } else if (showPaws) c.drawBitmap(paws, 0f, 0f, bodyPaint)
 
         c.restore()

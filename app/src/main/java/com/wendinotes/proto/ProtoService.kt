@@ -1,6 +1,5 @@
 package com.wendinotes.proto
 
-import android.animation.ValueAnimator
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -34,7 +33,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
-import android.view.animation.DecelerateInterpolator
 import io.livekit.android.renderer.TextureViewRenderer
 import java.util.Calendar
 import kotlin.random.Random
@@ -71,8 +69,8 @@ class ProtoService : Service() {
     private lateinit var prefs: SharedPreferences
     private val handler = Handler(Looper.getMainLooper())
     private var added = false
-    private var yAnim: ValueAnimator? = null
-    private var xAnim: ValueAnimator? = null
+    private var yAnim: ProtoAnim? = null   // 自前の時計で動かす（ValueAnimator は端末設定で一瞬になるため）
+    private var xAnim: ProtoAnim? = null
     private var minX = 0
     private var maxX = 0
 
@@ -309,36 +307,23 @@ class ProtoService : Service() {
         yAnim?.cancel()
         val falling = animate && added && panelTop == null && targetY - lp.y > h / 6
         if (falling) {
-            // 画面の下へ戻る時：重力っぽく落ちる（落ちている間は「わっ」の顔）。アプリを閉じた時はくるっと回りながら
-            val ms = if (spin) 560L else 440L
+            // 画面の下へ戻る時：前足をぱたぱたさせながら落ちる（「わっ」の顔）。
+            // 前足を出しておくと体の左下の欠けがふさがるので、回転はやめてシンプルにした
+            val ms = 380L
             fallUntil = SystemClock.elapsedRealtime() + ms
-            if (spin) view.spinOnce(ms)
-            view.flail(ms)   // バーを閉じて落ちる時も前足を振る（しがみつきポーズのまま落ちないように）
-            yAnim = ValueAnimator.ofInt(lp.y, targetY).apply {
-                duration = ms
-                interpolator = android.view.animation.AccelerateInterpolator(1.6f)
-                addUpdateListener {
-                    lp.y = it.animatedValue as Int
-                    if (added) { wm.updateViewLayout(view, lp); syncTouch() }
-                }
-                addListener(object : android.animation.AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(a: android.animation.Animator) {
-                        view.snapLook()   // 着地した時に姿勢もそろえる（着いてから沈んで「浮いて」見えないように）
-                        view.hop()        // 着地でぴょこっ
-                    }
-                })
-                start()
-            }
+            view.flail(ms)
+            yAnim = ProtoAnim(lp.y, targetY, ms, ProtoAnim.easeIn, { y ->
+                lp.y = y
+                if (added) { wm.updateViewLayout(view, lp); syncTouch() }
+            }, {
+                view.snapLook()   // 着地した時に姿勢もそろえる（着いてから沈んで「浮いて」見えないように）
+                view.hop()        // 着地でぴょこっ
+            }).start()
         } else if (animate && added && lp.y != targetY) {
-            yAnim = ValueAnimator.ofInt(lp.y, targetY).apply {
-                duration = 250
-                interpolator = DecelerateInterpolator()
-                addUpdateListener {
-                    lp.y = it.animatedValue as Int
-                    if (added) { wm.updateViewLayout(view, lp); syncTouch() }
-                }
-                start()
-            }
+            yAnim = ProtoAnim(lp.y, targetY, 250, ProtoAnim.easeOut, { y ->
+                lp.y = y
+                if (added) { wm.updateViewLayout(view, lp); syncTouch() }
+            }).start()
         } else {
             lp.y = targetY
         }
@@ -396,21 +381,13 @@ class ProtoService : Service() {
         val mid = (minX + maxX) / 2
         xAnim?.cancel()
         view.hop()
-        xAnim = ValueAnimator.ofInt(lp.x, target).apply {
-            duration = 300
-            interpolator = DecelerateInterpolator()
-            addUpdateListener {
-                lp.x = it.animatedValue as Int
-                view.mirror = lp.x > mid   // 真ん中を越えたら向きを変える
-                if (added) { wm.updateViewLayout(view, lp); syncTouch() }
-            }
-            addListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(a: android.animation.Animator) {
-                    prefs.edit().putString(Prefs.SIDE, if (right) "right" else "left").apply()
-                }
-            })
-            start()
-        }
+        xAnim = ProtoAnim(lp.x, target, 300, ProtoAnim.easeOut, { x ->
+            lp.x = x
+            view.mirror = lp.x > mid   // 真ん中を越えたら向きを変える
+            if (added) { wm.updateViewLayout(view, lp); syncTouch() }
+        }, {
+            prefs.edit().putString(Prefs.SIDE, if (right) "right" else "left").apply()
+        }).start()
     }
 
     /** タップ：パネルを開く（寝ていたら起きる）。開いていたら閉じる */
