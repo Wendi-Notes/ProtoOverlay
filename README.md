@@ -103,13 +103,13 @@ VOICEVOX を利用するときは、[ソフトウェア利用規約](https://voi
 
 ## まず試す（APK）
 
-1. [Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) から APK をダウンロードします。リリースがまだない場合は、配布用 APK は未公開です。
+1. [Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) から APK と `app-release.apk.sha256` をダウンロードします。リリースがまだない場合は、配布用 APK は未公開です。チェックサムでダウンロードした APK の SHA-256 を確認してください。
 2. Android でダウンロードした APK を開き、求められた場合はそのブラウザー／ファイルアプリからのインストールを許可します。
 3. アプリを起動し、PC 側サービスの URL を設定します。準備する URL や必要な権限は[セットアップガイド](docs/SETUP.md)を参照してください。
 
 このアプリは Android 11（API 30）以上を対象とします。オーバーレイ、マイク、通知などの権限が必要です。カメラと画面共有は利用する場合のみ許可してください。
 
-> **APK 署名について:** APK は Android にインストールするため署名されています。ダウンロードページでは署名方式と SHA-256 を案内します。異なる署名鍵で作られた APK は、既存アプリの上書き更新としてインストールできません。
+> **APK 署名について:** Releases の APK は専用リリース鍵で署名され、同じページに SHA-256 チェックサムが公開されます。異なる署名鍵で作られた APK は、既存アプリの上書き更新としてインストールできません。
 
 ## 開発・改造（Android プロジェクト）
 
@@ -127,7 +127,7 @@ cd ProtoOverlay
 
 出力先: `app/build/outputs/apk/debug/app-debug.apk`
 
-リリース APK の署名には、自分で保管するリリース鍵を使ってください。秘密鍵やパスワードをリポジトリに登録しないでください。`release` ビルドの署名設定や鍵管理については[開発者ガイド](docs/DEVELOPMENT.md)を参照してください。
+リリース APK の署名には、自分で保管するリリース鍵を使ってください。秘密鍵やパスワードをリポジトリに登録しないでください。GitHub Releases への署名済み APK 配布と鍵管理については[開発者ガイド](docs/DEVELOPMENT.md)を参照してください。
 
 ## プロジェクト構成
 
