@@ -3,7 +3,12 @@ package com.wendinotes.proto
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.AudioRecordingConfiguration
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import io.livekit.android.AudioOptions
@@ -19,6 +24,7 @@ import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalScreencastVideoTrack
 import io.livekit.android.room.track.LocalVideoTrackOptions
+import io.livekit.android.room.track.RemoteAudioTrack
 import io.livekit.android.room.track.VideoCaptureParameter
 import io.livekit.android.room.track.Track
 import io.livekit.android.room.track.VideoTrack
@@ -39,7 +45,7 @@ import java.net.URL
  * 通話係：PCのプロト（agent.py）と LiveKit でつなぐ。
  *  - つなぐ：バーを開いた時（PanelActivity.onResume）。接続先は設定の「接続」→ URL
  *  - token は「URL/token?character=proto」でもらう → PC側がプロトとして話す
- *  - 5分だれも話さなければ切って眠る。一時停止でも切る。ミュートはマイクだけ切る
+ *  - 5分だれも話さなければ切って眠る。一時停止でも切る。音声ミュートは受信音声だけを切る
  *  - PCからの合図：lk.agent.state=speaking → 口パク／zunda.icon=hatenahold・hatenaoff → 「？」／kira → うれしい
  */
 class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
@@ -55,10 +61,38 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     private var job: Job? = null
     private var lastIcon = ""
     private var lastActivity = SystemClock.elapsedRealtime()
+    private val audioManager = ctx.getSystemService(AudioManager::class.java)
+    private var yieldingMicrophone = false
+    private var observersRegistered = false
+    private var focusRequest: AudioFocusRequest? = null
+
+    private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                Log.i(TAG, "オーディオフォーカスを失いました(Gemini/電話/アシスタント優先)。マイクを一時譲渡します")
+                yieldingMicrophone = true
+                applyMic()
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                Log.i(TAG, "オーディオフォーカスを再取得しました。マイクを再開します")
+                yieldingMicrophone = false
+                applyMic()
+            }
+        }
+    }
+
+    private val recordingCallback = object : AudioManager.AudioRecordingCallback() {
+        override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>) {
+            updateMicrophoneHandoff(configs)
+        }
+    }
 
     val isOn get() = room != null && ProtoBus.conn == ProtoBus.Conn.ON
 
     init {
+        registerMicObservers()
         // 5分だれも話さなければ切る
         scope.launch {
             while (true) {
@@ -97,6 +131,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         if (ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ProtoBus.setConn(ProtoBus.Conn.NO_MIC); return
         }
+        registerMicObservers()
         ProtoBus.setConn(ProtoBus.Conn.CONNECTING)
         svc.setMicFgs(true)   // マイクを使う常駐に切り替える（バーが開いている＝アプリが前にいる今のうちに）
         job = scope.launch {
@@ -151,6 +186,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     }
 
     private fun cleanup() {
+        abandonAudioFocus()
         room?.release()
         room = null
         lastIcon = ""
@@ -164,7 +200,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     }
 
     /**
-     * マイクのON/OFFは必ず1つずつ順番に、その時点の「あるべき状態」（ミュートでなく、プロトが話していない）に合わせる。
+     * マイクのON/OFFは必ず1つずつ順番に、その時点の「あるべき状態」（プロトが話していない）に合わせる。
      * 接続直後にプロトが第一声を話すと、接続時のON・話し始めのOFF・話し終わりのONが同時に走り、
      * 最後にOFFが勝ってマイクが切れたままになることがあったため。
      */
@@ -173,15 +209,28 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         micLock.lock()
         try {
             val r = room ?: return
-            val want = !ProtoBus.muted && !ProtoBus.talking
+            val want = !ProtoBus.talking && !yieldingMicrophone
             try { r.localParticipant.setMicrophoneEnabled(want) } catch (e: Exception) { Log.w(TAG, "マイク切替失敗", e) }
         } finally { micLock.unlock() }
     }
 
-    /** ミュート／解除・プロトの話し始め／終わりをマイクに反映 */
+    /** プロトの話し始め／終わりをマイクに反映 */
     fun applyMic() {
         if (room == null) return
         scope.launch { syncMic() }
+    }
+
+    /** リモート参加者の受信音声だけをミュートする。スマホの他アプリの音量には影響しない */
+    fun setSpeakerMuted(muted: Boolean) {
+        room?.remoteParticipants?.values?.forEach { participant ->
+            participant.trackPublications.values.forEach { publication ->
+                applySpeakerMute(publication.track, muted)
+            }
+        }
+    }
+
+    private fun applySpeakerMute(track: Track?, muted: Boolean) {
+        (track as? RemoteAudioTrack)?.setVolume(if (muted) 0.0 else 1.0)
     }
 
     /** ダッシュボードから：つながっていれば、マイクの常駐とON/OFFを合わせ直す */
@@ -362,7 +411,54 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
 
     fun release() {
         disconnect()
+        if (observersRegistered) {
+            audioManager.unregisterAudioRecordingCallback(recordingCallback)
+            observersRegistered = false
+        }
         scope.cancel()
+    }
+
+    fun requestAudioFocus() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                .setOnAudioFocusChangeListener(focusChangeListener)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                .build()
+            focusRequest = req
+            audioManager?.requestAudioFocus(req)
+        }
+    }
+
+    fun abandonAudioFocus() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
+            focusRequest = null
+        }
+    }
+
+    private fun updateMicrophoneHandoff(configs: List<AudioRecordingConfiguration>) {
+        val shouldYield = configs.size > 1 || configs.any { it.isClientSilenced }
+        if (shouldYield == yieldingMicrophone) return
+        yieldingMicrophone = shouldYield
+        Log.i(TAG, if (shouldYield) "他アプリ(Gemini/電話等)のマイク使用を検出。マイクを譲ります" else "他アプリのマイク使用が終了。マイクを再開します")
+        applyMic()
+    }
+
+    private fun registerMicObservers() {
+        if (observersRegistered || ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return
+        try {
+            audioManager.registerAudioRecordingCallback(recordingCallback, Handler(Looper.getMainLooper()))
+            observersRegistered = true
+            requestAudioFocus()
+            updateMicrophoneHandoff(audioManager.activeRecordingConfigurations)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "他のアプリのマイク使用状態を監視できなかった", e)
+        }
     }
 
     // ------------------------------------------------------------------
@@ -383,6 +479,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
 
     private fun onEvent(ev: RoomEvent) {
         when (ev) {
+            is RoomEvent.TrackSubscribed -> applySpeakerMute(ev.track, ProtoBus.speakerMuted)
             is RoomEvent.ParticipantAttributesChanged ->
                 room?.remoteParticipants?.values?.forEach { onAttrs(it) }
             is RoomEvent.Disconnected -> {

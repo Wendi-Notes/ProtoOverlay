@@ -52,8 +52,8 @@ class ProtoService : Service() {
         const val ACTION_STOP = "com.wendinotes.proto.STOP"
         const val ACTION_PAUSE = "com.wendinotes.proto.PAUSE"
         const val ACTION_RESUME = "com.wendinotes.proto.RESUME"
-        const val ACTION_MUTE = "com.wendinotes.proto.MUTE"
-        const val ACTION_UNMUTE = "com.wendinotes.proto.UNMUTE"
+        const val ACTION_SPEAKER_MUTE = "com.wendinotes.proto.SPEAKER_MUTE"
+        const val ACTION_SPEAKER_UNMUTE = "com.wendinotes.proto.SPEAKER_UNMUTE"
         private const val CHANNEL = "proto"
         private const val NOTIF_ID = 1
         /** 倍率 1.0 のときの横幅 */
@@ -220,8 +220,8 @@ class ProtoService : Service() {
             }
             ACTION_PAUSE -> setPaused(true)
             ACTION_RESUME -> setPaused(false)
-            ACTION_MUTE -> setMuted(true)
-            ACTION_UNMUTE -> setMuted(false)
+            ACTION_SPEAKER_MUTE -> setSpeakerMuted(true)
+            ACTION_SPEAKER_UNMUTE -> setSpeakerMuted(false)
         }
         return START_NOT_STICKY
     }
@@ -532,7 +532,8 @@ class ProtoService : Service() {
 
     // ------------------------------------------------------------------ 通知（常駐に必要）
     // ふつうの通知（メディア欄には出さない：音楽アプリの操作と取り合わないように）。
-    // 本文に接続状態、ボタンは「一時停止／再開」「停止」。一時停止＝おやすみ（PCとつないだ後はマイクも切る）
+    // 本文に接続状態、ボタンは「一時停止／再開」「音声ミュート／解除」「停止」。
+    // 一時停止は接続を切って眠り、音声ミュートは LiveKit の受信音声だけを切る。
 
     fun setPaused(p: Boolean) {
         ProtoBus.paused = p
@@ -619,9 +620,9 @@ class ProtoService : Service() {
         }
     }
 
-    fun setMuted(m: Boolean) {
-        ProtoBus.muted = m
-        call?.applyMic()
+    fun setSpeakerMuted(muted: Boolean) {
+        ProtoBus.speakerMuted = muted
+        call?.setSpeakerMuted(muted)
         ProtoBus.panel?.showConn()
         refreshNotification()
         ProtoBus.onConn?.invoke()
@@ -629,7 +630,7 @@ class ProtoService : Service() {
 
     private fun buildNotification(): Notification {
         val paused = ProtoBus.paused
-        val muted = ProtoBus.muted
+        val speakerMuted = ProtoBus.speakerMuted
         fun svc(code: Int, action: String) = PendingIntent.getService(
             this, code, Intent(this, ProtoService::class.java).setAction(action), PendingIntent.FLAG_IMMUTABLE
         )
@@ -641,8 +642,9 @@ class ProtoService : Service() {
             if (paused) "再開" else "一時停止", svc(3, if (paused) ACTION_RESUME else ACTION_PAUSE)
         ).build()
         val mute = Notification.Action.Builder(
-            Icon.createWithResource(this, if (muted) R.drawable.ic_mic else R.drawable.ic_mic_off),
-            if (muted) "ミュート解除" else "ミュート", svc(4, if (muted) ACTION_UNMUTE else ACTION_MUTE)
+            Icon.createWithResource(this, if (speakerMuted) R.drawable.ic_volume_up else R.drawable.ic_volume_off),
+            if (speakerMuted) "音声ON" else "ミュート",
+            svc(4, if (speakerMuted) ACTION_SPEAKER_UNMUTE else ACTION_SPEAKER_MUTE)
         ).build()
         val stop = Notification.Action.Builder(
             Icon.createWithResource(this, R.drawable.ic_stop), "停止", svc(1, ACTION_STOP)
@@ -651,7 +653,7 @@ class ProtoService : Service() {
         val state = listOfNotNull(
             ProtoBus.conn.label,
             if (paused) "一時停止中" else null,
-            if (muted && !paused) "マイクOFF" else null,
+            if (speakerMuted) "ミュート中" else null,
         ).joinToString("・")
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_proto)

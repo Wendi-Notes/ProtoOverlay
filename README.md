@@ -14,7 +14,7 @@
 
 ProtoOverlay は Android 11 以降のスマートフォンにマスコット「プロト」をオーバーレイ表示し、LiveKit を通じて PC 側の AI エージェントと音声・テキスト・画像などをやりとりするコンパニオンアプリです。Tailscale を使って PC 側の接続先をプライベートに公開する構成を想定しています。
 
-![実機の設定・ダッシュボード画面](docs/images/settings-screen.png)
+![エミュレーターのダッシュボード画面](docs/images/settings-screen.png)
 
 ## プロトの表情と動き
 
@@ -37,20 +37,26 @@ ProtoOverlay は Android 11 以降のスマートフォンにマスコット「�
 
 左下で居眠りしているプロトをタップすると、入力バーと一緒に起き上がって、バーのふちにしがみつきます。バーからは文字やリンクの送信、カメラの切り替え、会話のやりとりの確認ができます。閉じると、また画面の端に戻ります。
 
-## 実機スクリーンショット
+## アプリのスクリーンショット
 
-スマートフォン画面のダッシュボード、表示設定、睡眠設定、接続設定です。接続設定の画面では、実際の Tailscale hostname を例示用アドレスに置き換えています。
+ダッシュボードには一時停止と LiveKit の受信音声ミュートの操作があります。ミュートはこのアプリで受信する音声だけに適用され、端末全体の音量には影響しません。通知欄からも一時停止・ミュート・停止を操作できます。現在の画面例はエミュレーターで撮影しており、PC 側サービスには接続していません。
 
 <table>
 <tr>
 <td align="center"><a href="docs/images/screenshots/dashboard.png"><img src="docs/images/screenshots/dashboard.png" width="220" alt="ダッシュボード"><br><sub>ダッシュボード</sub></a></td>
-<td align="center"><a href="docs/images/screenshots/appearance-settings.png"><img src="docs/images/screenshots/appearance-settings.png" width="220" alt="表示設定"><br><sub>表示・色の設定</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/notification-controls.png"><img src="docs/images/screenshots/notification-controls.png" width="220" alt="通知欄の操作ボタン"><br><sub>通知欄の操作（一時停止・ミュート・停止）</sub></a></td>
 </tr>
 <tr>
+<td align="center"><a href="docs/images/screenshots/mascot-overlay.png"><img src="docs/images/screenshots/mascot-overlay.png" width="220" alt="ホーム画面左下に常駐するプロト"><br><sub>ホーム画面左下に常駐</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/mascot-panel.png"><img src="docs/images/screenshots/mascot-panel.png" width="220" alt="プロトをタップして開いたポップアップ"><br><sub>タップで入力パネルを表示</sub></a></td>
+</tr>
+<tr>
+<td align="center"><a href="docs/images/screenshots/appearance-settings.png"><img src="docs/images/screenshots/appearance-settings.png" width="220" alt="表示設定"><br><sub>表示・色の設定</sub></a></td>
 <td align="center"><a href="docs/images/screenshots/sleep-settings.png"><img src="docs/images/screenshots/sleep-settings.png" width="220" alt="睡眠設定"><br><sub>睡眠・居眠りの設定</sub></a></td>
-<td align="center"><a href="docs/images/screenshots/connection-settings-redacted.png"><img src="docs/images/screenshots/connection-settings-redacted.png" width="220" alt="接続設定（個人情報を除去）"><br><sub>接続・権限の設定（hostname を例示用に置換）</sub></a></td>
 </tr>
 </table>
+
+接続設定のスクリーンショットでは、実際の Tailscale hostname を例示用アドレスに置き換えています。
 
 <p align="center">
   <a href="docs/images/proto-app-icon.png"><img src="docs/images/proto-app-icon.png" width="128" alt="ProtoOverlay アプリアイコン"></a>
@@ -64,7 +70,7 @@ ProtoOverlay は Android 11 以降のスマートフォンにマスコット「�
 - LiveKit を使った PC 側エージェントとの音声通話、会話状態や文字起こしの表示
 - 共有メニューから画像やリンクを PC 側へ送信
 - PC 側の対応状況に応じたカメラ映像・画面共有
-- 表示テーマ、マスコットの大きさ・位置、休止やミュートなどの設定
+- 表示テーマ、マスコットの大きさ・位置、一時停止、LiveKit 受信音声のミュートなどの設定
 
 ## 使うもの
 

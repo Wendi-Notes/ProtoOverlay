@@ -8,7 +8,7 @@ ProtoOverlay is an Android companion app that places the animated mascot “Prot
 
 > **In development:** This repository contains the Android app only. It does not include the PC agent, token endpoint, or LiveKit server. Those components must be set up separately.
 
-![ProtoOverlay dashboard on a connected Android device](docs/images/settings-screen.png)
+![ProtoOverlay dashboard on an Android emulator](docs/images/settings-screen.png)
 
 ## Proto’s expressions and motions
 
@@ -23,20 +23,26 @@ Proto peeks from the screen edge or clings to the edge of the input bar, and cha
 </tr>
 </table>
 
-## Emulator screenshots
+## App screenshots
 
-These are views of the dashboard, appearance settings, sleep and idle settings, and connection settings on Android. The private hostname in the connection screenshot has been replaced with an example address.
+The dashboard provides pause and LiveKit incoming-audio mute controls. Mute applies only to audio received by this app; it does not change the device-wide volume. The notification shade also provides pause, mute, and stop actions. These current screenshots were captured in an emulator that was not connected to a PC-side service.
 
 <table>
 <tr>
 <td align="center"><a href="docs/images/screenshots/dashboard.png"><img src="docs/images/screenshots/dashboard.png" width="220" alt="Dashboard"><br><sub>Dashboard</sub></a></td>
-<td align="center"><a href="docs/images/screenshots/appearance-settings.png"><img src="docs/images/screenshots/appearance-settings.png" width="220" alt="Appearance settings"><br><sub>Appearance and color settings</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/notification-controls.png"><img src="docs/images/screenshots/notification-controls.png" width="220" alt="Notification controls"><br><sub>Notification actions (pause, mute, stop)</sub></a></td>
 </tr>
 <tr>
+<td align="center"><a href="docs/images/screenshots/mascot-overlay.png"><img src="docs/images/screenshots/mascot-overlay.png" width="220" alt="Proto docked in the bottom-left corner"><br><sub>Persistent mascot in the bottom-left</sub></a></td>
+<td align="center"><a href="docs/images/screenshots/mascot-panel.png"><img src="docs/images/screenshots/mascot-panel.png" width="220" alt="Popup panel opened by tapping Proto"><br><sub>Input panel opened by tapping Proto</sub></a></td>
+</tr>
+<tr>
+<td align="center"><a href="docs/images/screenshots/appearance-settings.png"><img src="docs/images/screenshots/appearance-settings.png" width="220" alt="Appearance settings"><br><sub>Appearance and color settings</sub></a></td>
 <td align="center"><a href="docs/images/screenshots/sleep-settings.png"><img src="docs/images/screenshots/sleep-settings.png" width="220" alt="Sleep and idle settings"><br><sub>Sleep and idle settings</sub></a></td>
-<td align="center"><a href="docs/images/screenshots/connection-settings-redacted.png"><img src="docs/images/screenshots/connection-settings-redacted.png" width="220" alt="Redacted connection settings"><br><sub>Connection and permission settings (example hostname)</sub></a></td>
 </tr>
 </table>
+
+The private hostname in the connection-settings screenshot has been replaced with an example address.
 
 <p align="center">
   <a href="docs/images/proto-app-icon.png"><img src="docs/images/proto-app-icon.png" width="128" alt="ProtoOverlay app icon"></a>
@@ -56,7 +62,7 @@ Tap Proto dozing in the bottom-left corner and it rises with the input bar, clin
 - LiveKit voice calls, connection state, and transcription display
 - Share images and links from Android to the PC-side agent
 - Optional camera and screen sharing, subject to Android permissions and server support
-- Appearance, idle, mute, and pause settings
+- Appearance and idle settings, pause, and LiveKit incoming-audio mute
 
 ## Components and networking
 
