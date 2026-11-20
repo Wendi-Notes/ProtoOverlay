@@ -42,7 +42,7 @@ class SettingsActivity : Activity() {
     private lateinit var historySv: ScrollView
     private lateinit var btnStartStop: Button
     private lateinit var btnPause: Button
-    private lateinit var btnMute: Button
+    private lateinit var btnSpeakerMute: Button
 
     private val gestureDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -125,10 +125,10 @@ class SettingsActivity : Activity() {
 
         btnStartStop = actionButton("起動") { toggleService() }
         btnPause = actionButton("一時停止") { togglePause() }
-        btnMute = actionButton("ミュート") { toggleMute() }
+        btnSpeakerMute = actionButton("音声ミュート") { toggleSpeakerMute() }.apply { textSize = 14f }
         val ctrl = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         ctrl.addView(btnPause, LinearLayout.LayoutParams(dp(112), dp(44)).apply { marginEnd = dp(8) })
-        ctrl.addView(btnMute, LinearLayout.LayoutParams(dp(112), dp(44)))
+        ctrl.addView(btnSpeakerMute, LinearLayout.LayoutParams(dp(112), dp(44)))
         mid.addView(ctrl, android.widget.FrameLayout.LayoutParams(-2, -2).apply {
             gravity = Gravity.TOP or (if (protoLeft) Gravity.END else Gravity.START)
             topMargin = (cling - dp(44) - dp(8)).coerceAtLeast(0)
@@ -233,10 +233,10 @@ class SettingsActivity : Activity() {
         val running = ProtoBus.service != null
         val conn = ProtoBus.conn.label
         val paused = ProtoBus.paused
-        val muted = ProtoBus.muted
+        val speakerMuted = ProtoBus.speakerMuted
 
         statusTv.text = if (running) {
-            "● 起動中 | 接続: $conn" + (if (paused) " (一時停止)" else "") + (if (muted) " (マイクOFF)" else "")
+            "● 起動中 | 接続: $conn" + (if (paused) " (一時停止)" else "") + (if (speakerMuted) " (ミュート中)" else "")
         } else {
             "○ 停止中"
         }
@@ -251,13 +251,13 @@ class SettingsActivity : Activity() {
         }
         btnPause.setTextColor(if (paused) Ui.ON_ACCENT else Ui.TEXT)
 
-        btnMute.text = if (muted) "ミュート解除" else "ミュート"
-        btnMute.background = GradientDrawable().apply {
-            setColor(if (muted) Ui.ACCENT else Ui.SURFACE2)
+        btnSpeakerMute.text = if (speakerMuted) "ミュート中" else "音声ON"
+        btnSpeakerMute.background = GradientDrawable().apply {
+            setColor(if (speakerMuted) Ui.ACCENT else Ui.SURFACE2)
             cornerRadius = dp(8).toFloat()
             setStroke(dp(1), Ui.LINE)
         }
-        btnMute.setTextColor(if (muted) Ui.ON_ACCENT else Ui.TEXT)
+        btnSpeakerMute.setTextColor(if (speakerMuted) Ui.ON_ACCENT else Ui.TEXT)
 
         protoViewDashboard?.visibility = if (!running) View.VISIBLE else View.INVISIBLE
     }
@@ -283,10 +283,10 @@ class SettingsActivity : Activity() {
         updateStatus()
     }
 
-    private fun toggleMute() {
+    private fun toggleSpeakerMute() {
         val running = ProtoBus.service != null
         if (!running) return
-        ProtoBus.service?.setMuted(!ProtoBus.muted)
+        ProtoBus.service?.setSpeakerMuted(!ProtoBus.speakerMuted)
         updateStatus()
     }
 

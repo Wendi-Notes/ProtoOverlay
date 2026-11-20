@@ -212,7 +212,7 @@ class PanelActivity : Activity() {
         camBtn.setColorFilter(if (active) 0xFF14200F.toInt() else th.ink)
 
         val c = ProtoBus.conn
-        val sp = android.text.SpannableString("● " + c.label + if (ProtoBus.muted) "（マイクOFF）" else "")
+        val sp = android.text.SpannableString("● " + c.label + if (ProtoBus.speakerMuted) "（スピーカーOFF）" else "")
         sp.setSpan(android.text.style.ForegroundColorSpan(c.color), 0, 1, 0)
         connLabel.text = sp
     }

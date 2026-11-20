@@ -77,8 +77,8 @@ object ProtoBus {
 
     /** 一時停止中（通知のボタン）。おやすみ＋マイクも切る */
     var paused = false
-    /** ミュート中（通知のボタン）。起きたまま、マイクだけ切る。通話係（あとで追加）がこれを見る */
-    var muted = false
+    /** LiveKit の受信音声をミュート中。スマホのマイクには影響しない */
+    var speakerMuted = false
 
     /** いま寝ているか（サービスが毎回更新する） */
     var asleep = false

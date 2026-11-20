@@ -1,6 +1,6 @@
 # ProtoOverlay screenshots and app icon
 
-These are real screenshots from the Android Studio emulator running ProtoOverlay 0.2. The connection-settings image replaces the private PC/Tailscale hostname with an example address. No real endpoint is included in these assets.
+These screenshots were captured from ProtoOverlay running in an Android emulator. The current dashboard, notification, and mascot-overlay images show the app without a connection to a PC-side service. The connection-settings image replaces the private PC/Tailscale hostname with an example address; no real endpoint is included in these assets.
 
 The original full-resolution screenshots are linked below and can be downloaded individually.
 
@@ -9,6 +9,24 @@ The original full-resolution screenshots are linked below and can be downloaded 
 [![ProtoOverlay dashboard](images/screenshots/dashboard.png)](images/screenshots/dashboard.png)
 
 The dashboard shows the service state, mascot, pause and mute controls, and conversation area.
+
+## Notification controls
+
+[![ProtoOverlay notification actions](images/screenshots/notification-controls.png)](images/screenshots/notification-controls.png)
+
+The expanded foreground-service notification exposes pause, mute, and stop actions. Mute affects only incoming LiveKit audio, not the device-wide volume.
+
+## Persistent mascot
+
+[![Proto on the home screen](images/screenshots/mascot-overlay.png)](images/screenshots/mascot-overlay.png)
+
+Proto remains docked at the bottom-left of the home screen while the service is running.
+
+## Popup panel
+
+[![Popup panel opened by tapping Proto](images/screenshots/mascot-panel.png)](images/screenshots/mascot-panel.png)
+
+Tapping the mascot opens the overlay panel with the conversation area and input actions.
 
 ## Appearance
 
