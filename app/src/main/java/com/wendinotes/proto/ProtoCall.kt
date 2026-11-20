@@ -143,6 +143,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
                 }
                 launch { r.events.collect { onEvent(it) } }
                 r.connect(url, token)
+                publishCollectOnly(ProtoBus.speakerMuted)
                 syncMic()
                 launch { delay(2000); syncMic() }   // 第一声とぶつかった時の念押し
                 ProtoBus.setConn(ProtoBus.Conn.ON)
@@ -178,6 +179,13 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         svc.setShareFgs(false)
     }
 
+    private fun publishCollectOnly(muted: Boolean) {
+        scope.launch {
+            try { room?.localParticipant?.sendText("collect_only:" + if (muted) "1" else "0", StreamTextOptions(topic = "proto.state")) }
+            catch (e: Exception) { Log.w(TAG, "環境音収集状態を送れなかった", e) }
+        }
+    }
+
     /**
      * マイクのON/OFFは必ず1つずつ順番に、その時点の「あるべき状態」（プロトが話していない）に合わせる。
      * 接続直後にプロトが第一声を話すと、接続時のON・話し始めのOFF・話し終わりのONが同時に走り、
@@ -202,6 +210,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     /** リモート参加者の受信音声だけをミュートする。スマホの他アプリの音量には影響しない */
     fun setSpeakerMuted(muted: Boolean) {
         ProtoBus.speakerMuted = muted
+        publishCollectOnly(muted)
         room?.remoteParticipants?.values?.forEach { participant ->
             participant.trackPublications.values.forEach { publication ->
                 applySpeakerMute(publication.track, muted)
