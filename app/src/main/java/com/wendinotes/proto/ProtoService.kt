@@ -265,6 +265,7 @@ class ProtoService : Service() {
         }
         if (::winCtx.isInitialized) winCtx.unregisterComponentCallbacks(winCallbacks)
         ProtoBus.paused = false
+        ProtoBus.speakerMuted = false
         ProtoBus.panel?.finish()
         if (ProtoBus.service === this) ProtoBus.service = null
         ProtoBus.clearHistory()

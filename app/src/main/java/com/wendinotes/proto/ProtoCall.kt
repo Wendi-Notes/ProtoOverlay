@@ -3,8 +3,6 @@ package com.wendinotes.proto
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioRecordingConfiguration
 import android.os.Handler
@@ -64,24 +62,10 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     private val audioManager = ctx.getSystemService(AudioManager::class.java)
     private var yieldingMicrophone = false
     private var observersRegistered = false
-    private var focusRequest: AudioFocusRequest? = null
 
-    private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                Log.i(TAG, "オーディオフォーカスを失いました(Gemini/電話/アシスタント優先)。マイクを一時譲渡します")
-                yieldingMicrophone = true
-                applyMic()
-            }
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                Log.i(TAG, "オーディオフォーカスを再取得しました。マイクを再開します")
-                yieldingMicrophone = false
-                applyMic()
-            }
-        }
-    }
+    // Audio focus tracks playback priority, not microphone use. Video/music playback must
+    // not disable Proto's microphone; actual competing microphone capture is detected below.
+
 
     private val recordingCallback = object : AudioManager.AudioRecordingCallback() {
         override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>) {
@@ -186,7 +170,6 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     }
 
     private fun cleanup() {
-        abandonAudioFocus()
         room?.release()
         room = null
         lastIcon = ""
@@ -418,34 +401,11 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         scope.cancel()
     }
 
-    fun requestAudioFocus() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
-                .setOnAudioFocusChangeListener(focusChangeListener)
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                .build()
-            focusRequest = req
-            audioManager?.requestAudioFocus(req)
-        }
-    }
-
-    fun abandonAudioFocus() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
-            focusRequest = null
-        }
-    }
-
     private fun updateMicrophoneHandoff(configs: List<AudioRecordingConfiguration>) {
         val shouldYield = configs.size > 1 || configs.any { it.isClientSilenced }
         if (shouldYield == yieldingMicrophone) return
         yieldingMicrophone = shouldYield
-        Log.i(TAG, if (shouldYield) "他アプリ(Gemini/電話等)のマイク使用を検出。マイクを譲ります" else "他アプリのマイク使用が終了。マイクを再開します")
+        Log.i(TAG, if (shouldYield) "他アプリのマイク使用を検出（録音状態）。マイクを譲ります" else "他アプリのマイク使用が終了。マイクを再開します")
         applyMic()
     }
 
@@ -454,7 +414,6 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         try {
             audioManager.registerAudioRecordingCallback(recordingCallback, Handler(Looper.getMainLooper()))
             observersRegistered = true
-            requestAudioFocus()
             updateMicrophoneHandoff(audioManager.activeRecordingConfigurations)
         } catch (e: SecurityException) {
             Log.w(TAG, "他のアプリのマイク使用状態を監視できなかった", e)
