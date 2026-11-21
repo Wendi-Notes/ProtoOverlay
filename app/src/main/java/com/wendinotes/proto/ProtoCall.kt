@@ -3,6 +3,9 @@ package com.wendinotes.proto
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.AudioRecordingConfiguration
 import android.os.Handler
@@ -13,6 +16,7 @@ import io.livekit.android.AudioOptions
 import io.livekit.android.AudioType
 import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
+import io.livekit.android.audio.AudioSwitchHandler
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import io.livekit.android.renderer.TextureViewRenderer
@@ -51,6 +55,15 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     companion object {
         private const val TAG = "ProtoCall"
         private const val IDLE_LIMIT_MS = 5 * 60_000L
+        private const val MIC_TAIL_MS = 450L   // 話し終わりの残響を拾わないよう、マイクを戻すまで少し待つ
+        private val HEADSET_TYPES = setOf(
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_BLE_HEADSET,
+        )
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -61,6 +74,13 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     private var lastActivity = SystemClock.elapsedRealtime()
     private val audioManager = ctx.getSystemService(AudioManager::class.java)
     private var yieldingMicrophone = false
+    private var mediaAudio = true          // この接続でメディアの音声経路を使っているか
+    private var guardUntil = 0L            // 話し終わってもこの時刻まではマイクを止めたまま（自分の声の残響対策）
+
+    private val deviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) { applyMic() }
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) { applyMic() }
+    }
     private var observersRegistered = false
 
     // Audio focus tracks playback priority, not microphone use. Video/music playback must
@@ -119,11 +139,10 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         job = scope.launch {
             try {
                 val (url, token) = withContext(Dispatchers.IO) { fetchToken(base) }
-                // 受信音声を「メディアの音」にする（標準は通話の音になり、音楽の音が小さくなる等の影響がある）
-                val r = LiveKit.create(
-                    appContext = ctx.applicationContext,
-                    overrides = LiveKitOverrides(audioOptions = AudioOptions(audioOutputType = AudioType.MediaAudioType())),
-                )
+                // 音声の経路：既定はメディア（音量キーでプロトの声を調整できる）。設定で通話の経路にも戻せる
+                mediaAudio = Prefs.get(ctx).getBoolean(Prefs.AUDIO_MEDIA, true)
+                val r = LiveKit.create(appContext = ctx.applicationContext, overrides = audioOverrides(mediaAudio))
+                Log.i(TAG, "音声の経路=" + if (mediaAudio) "メディア（WebRTCのソフトAEC）" else "通話（端末のAEC）")
                 // カメラは外カメラ（見せたいものを映す）
                 r.videoTrackCaptureDefaults = LocalVideoTrackOptions(position = CameraPosition.BACK)
                 room = r
@@ -145,7 +164,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
                 r.connect(url, token)
                 publishCollectOnly(ProtoBus.speakerMuted)
                 syncMic()
-                launch { delay(2000); syncMic() }   // 第一声とぶつかった時の念押し
+                launch { delay(2000); applyMic() }   // 第一声とぶつかった時の念押し
                 ProtoBus.setConn(ProtoBus.Conn.ON)
                 touch()
             } catch (e: Exception) {
@@ -164,6 +183,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
     }
 
     private fun cleanup() {
+        micEnabledState = null
         room?.release()
         room = null
         screenTrack?.dispose()
@@ -179,6 +199,50 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
         svc.setShareFgs(false)
     }
 
+    /**
+     * メディア経路：USAGE_MEDIA / STREAM_MUSIC / MODE_NORMAL で再生する → 音量キーでメディア音量として下げられる。
+     *  - 端末のエコーキャンセル（HW AEC）は通話モード前提でメディア再生の音を参照できないことが多いので切り、
+     *    WebRTC 内蔵のソフトAEC（自分が再生した音を参照して消す）を使う
+     *  - 音声フォーカスは取らない（つないだだけで動画・音楽が止まらないように）
+     */
+    private fun audioOverrides(media: Boolean): LiveKitOverrides {
+        if (!media) return LiveKitOverrides()
+        val handler = AudioSwitchHandler(ctx.applicationContext).apply {
+            audioMode = AudioManager.MODE_NORMAL
+            audioAttributeUsageType = AudioAttributes.USAGE_MEDIA
+            audioAttributeContentType = AudioAttributes.CONTENT_TYPE_SPEECH
+            audioStreamType = AudioManager.STREAM_MUSIC
+            manageAudioFocus = false
+        }
+        return LiveKitOverrides(
+            audioOptions = AudioOptions(
+                audioOutputType = AudioType.MediaAudioType(),
+                audioHandler = handler,
+                javaAudioDeviceModuleCustomizer = { b ->
+                    b.setUseHardwareAcousticEchoCanceler(false)
+                },
+                disableCommunicationModeWorkaround = true,
+            ),
+        )
+    }
+
+    /** イヤホン・ヘッドホン（有線・Bluetooth・USB）から音が出ているか＝スピーカーの声をマイクが拾う心配がない */
+    private fun headsetOut(): Boolean = try {
+        audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.type in HEADSET_TYPES }
+    } catch (e: Exception) { false }
+
+    /** プロトが話している間（＋話し終わりの少しの間）、マイクを止めて自分の声を拾わないようにするか */
+    private fun guardMic(): Boolean {
+        val mode = Prefs.get(ctx).getString(Prefs.TALK_MIC, "auto") ?: "auto"
+        val guard = when (mode) {
+            "keep" -> false
+            "mute" -> true
+            else -> mediaAudio && !headsetOut()   // 自動：メディア経路でスピーカーから出ている時だけ止める
+        }
+        if (!guard) return false
+        return ProtoBus.talking || SystemClock.elapsedRealtime() < guardUntil
+    }
+
     private fun publishCollectOnly(muted: Boolean) {
         scope.launch {
             try { room?.localParticipant?.sendText("collect_only:" + if (muted) "1" else "0", StreamTextOptions(topic = "proto.state")) }
@@ -192,16 +256,24 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
      * 最後にOFFが勝ってマイクが切れたままになることがあったため。
      */
     private val micLock = kotlinx.coroutines.sync.Mutex()
+    private var micEnabledState: Boolean? = null
     private suspend fun syncMic() {
         micLock.lock()
         try {
             val r = room ?: return
-            val want = !ProtoBus.talking && !yieldingMicrophone
-            try { r.localParticipant.setMicrophoneEnabled(want) } catch (e: Exception) { Log.w(TAG, "マイク切替失敗", e) }
+            val guard = guardMic()
+            val want = !yieldingMicrophone && !guard
+            try {
+                r.localParticipant.setMicrophoneEnabled(want)
+                if (micEnabledState != want) {
+                    micEnabledState = want
+                    Log.i(TAG, "マイク送信=${if (want) "ON" else "OFF"} / talking=${ProtoBus.talking} / 自分の声よけ=$guard / handoff=$yieldingMicrophone")
+                }
+            } catch (e: Exception) { Log.w(TAG, "マイク切替失敗", e) }
         } finally { micLock.unlock() }
     }
 
-    /** プロトの話し始め／終わりをマイクに反映 */
+    /** マイクのON/OFFを今あるべき状態に合わせる（話している間の扱いは設定「プロトが話している間のマイク」） */
     fun applyMic() {
         if (room == null) return
         scope.launch { syncMic() }
@@ -399,6 +471,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
             audioManager.unregisterAudioRecordingCallback(recordingCallback)
             observersRegistered = false
         }
+        try { audioManager.unregisterAudioDeviceCallback(deviceCallback) } catch (_: Exception) {}
         scope.cancel()
     }
 
@@ -412,6 +485,7 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
 
     private fun registerMicObservers() {
         if (observersRegistered || ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return
+        try { audioManager.registerAudioDeviceCallback(deviceCallback, Handler(Looper.getMainLooper())) } catch (_: Exception) {}
         try {
             audioManager.registerAudioRecordingCallback(recordingCallback, Handler(Looper.getMainLooper()))
             observersRegistered = true
@@ -457,8 +531,15 @@ class ProtoCall(private val ctx: Context, private val svc: ProtoService) {
             val wasTalking = ProtoBus.talking
             ProtoBus.talking = st == "speaking"
             if (st == "speaking" || st == "thinking") touch()
-            // メディアの音で出しているとエコー除去が弱いので、プロトが話している間はマイクを止める（自分の声を拾わないように）
-            if (ProtoBus.talking != wasTalking) applyMic()
+            // スピーカーから出したプロトの声をマイクが拾ってループしないよう、設定に応じて話している間はマイクを止める
+            if (ProtoBus.talking != wasTalking) {
+                if (!ProtoBus.talking) {
+                    guardUntil = SystemClock.elapsedRealtime() + MIC_TAIL_MS
+                    scope.launch { delay(MIC_TAIL_MS + 30); applyMic() }   // 残響が消えてから戻す
+                }
+                Log.i(TAG, if (ProtoBus.talking) "Proto発話開始" else "Proto発話終了")
+                applyMic()
+            }
         }
         val raw = a["proto.icon"] ?: return
         if (raw == lastIcon) return

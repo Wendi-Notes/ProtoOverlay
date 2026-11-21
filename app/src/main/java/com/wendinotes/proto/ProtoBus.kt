@@ -114,6 +114,8 @@ object Prefs {
     const val GLOW = "glow"              // 顔の光り方（true＝アイコン風）
     const val HUE = "hue"                // 毛の色（色相を何度回すか -180〜180）
     const val BAR_PATTERN = "bar_pattern"  // バーの背景の模様（ProtoArt.NAMES）
+    const val AUDIO_MEDIA = "audio_media"  // true＝プロトの声をメディア音量で出す（音量キーで調整できる）／false＝通話の音声
+    const val TALK_MIC = "talk_mic"        // プロトが話している間のマイク："auto"（スピーカーなら止める・イヤホンなら割り込みOK）/"keep"/"mute"
 
     fun get(c: Context): SharedPreferences = c.getSharedPreferences("proto", Context.MODE_PRIVATE)
 }

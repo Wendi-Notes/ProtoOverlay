@@ -87,6 +87,7 @@ class PanelActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Prefs.get(this).getBoolean(Prefs.AUDIO_MEDIA, true)) volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         ProtoBus.panel = this
         setFinishOnTouchOutside(true)
         th = BarTheme.current(this)
@@ -221,7 +222,7 @@ class PanelActivity : Activity() {
         if (!resumed) return
         val loc = IntArray(2)
         root.getLocationOnScreen(loc)
-        if (root.height > 0) ProtoBus.setPanelTop(loc[1])
+        if (root.height > 0) ProtoBus.setPanelTop(loc[1], instant = true)   // バーを開いた時はせり上がらず、すぐふちへ（ワープ）
     }
 
     override fun onResume() {

@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -43,6 +44,7 @@ class SettingsActivity : Activity() {
     private lateinit var btnStartStop: Button
     private lateinit var btnPause: Button
     private lateinit var btnSpeakerMute: Button
+    private lateinit var inputEt: EditText
 
     private val gestureDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -63,6 +65,7 @@ class SettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Prefs.get(this).getBoolean(Prefs.AUDIO_MEDIA, true)) volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         Ui.load(this)
         builtTheme = Ui.themeName   // この画面を作った時の色（各種設定で Ui が書き換わっても比べられるように自分で持つ）
 
@@ -162,6 +165,51 @@ class SettingsActivity : Activity() {
         mid.addView(historySv, android.widget.FrameLayout.LayoutParams(-1, -1).apply { topMargin = cling })
 
         root.addView(mid, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        // ---- 3. 下：文字入力欄と「送る」（Web版と同じ。話しかける文字・見せたいURL） ----
+        val inputRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), 0, dp(12), dp(12))
+        }
+        inputEt = EditText(this).apply {
+            hint = "メッセージやURL"
+            textSize = 15f
+            setTextColor(Ui.TEXT)
+            setHintTextColor(Ui.SUB)
+            maxLines = 4
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEND
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(22).toFloat()
+                setColor(Ui.SURFACE)
+                setStroke(dp(1), Ui.LINE)
+            }
+            setOnEditorActionListener { _, id, _ ->
+                if (id == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) { sendInput(); true } else false
+            }
+        }
+        // Button だと影の余白でずれるので TextView で作る（バーの「送る」と同じ）
+        val sendBtn = TextView(this).apply {
+            text = "送る"
+            textSize = 15f
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+            setTextColor(Ui.ON_ACCENT)
+            background = GradientDrawable().apply {
+                cornerRadius = dp(22).toFloat()
+                setColor(Ui.ACCENT)
+            }
+            setPadding(dp(18), 0, dp(18), 0)
+            setOnClickListener { sendInput() }
+        }
+        inputRow.addView(inputEt, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) })
+        inputRow.addView(sendBtn, LinearLayout.LayoutParams(-2, dp(44)))
+        root.addView(inputRow, LinearLayout.LayoutParams(-1, -2))
+
+        // キーボードが出たら画面を縮めて、入力欄をキーボードの上に出す（プロトは履歴の箱のふちについていく）
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         setContentView(root)
         Ui.paintWindow(this)
@@ -331,6 +379,25 @@ class SettingsActivity : Activity() {
 
         ChatBubbles.render(this, historyContainer, ProtoBus.history, ChatBubbles.app(), 14f)
         historySv.post { historySv.scrollTo(0, 0) }
+    }
+
+    /** 入力欄の文字を送る。つながっていなければ、つないでから送る */
+    private fun sendInput() {
+        val text = inputEt.text?.toString()?.trim().orEmpty()
+        if (text.isEmpty()) return
+        val call = ProtoBus.service?.call
+        if (call == null) {
+            android.widget.Toast.makeText(this, "プロトが起動していません（右上のスイッチで起動）", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        inputEt.setText("")
+        ProtoBus.addHistory("あなた（文字）", text)
+        renderHistory()
+        call.sendTextConnecting(text) { ok ->
+            if (!ok) runOnUiThread {
+                android.widget.Toast.makeText(this, "送れませんでした（つながりません）", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun actionButton(label: String, onClick: () -> Unit) = Button(this).apply {

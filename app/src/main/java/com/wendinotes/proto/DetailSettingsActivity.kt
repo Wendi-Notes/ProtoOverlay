@@ -337,6 +337,43 @@ class DetailSettingsActivity : Activity() {
 
         body.addView(urlRow)
 
+        head("音声")
+        body.addView(Switch(this).apply {
+            text = "プロトの声をメディア音量で出す（音量キーで調整）"
+            setTextColor(Ui.TEXT)
+            isChecked = prefs.getBoolean(Prefs.AUDIO_MEDIA, true)
+            setOnCheckedChangeListener { _, on ->
+                prefs.edit().putBoolean(Prefs.AUDIO_MEDIA, on).apply()
+                volumeControlStream = if (on) android.media.AudioManager.STREAM_MUSIC else android.media.AudioManager.USE_DEFAULT_STREAM_TYPE
+                // 音声の経路はつなぐ時に決まるので、つながっていればつなぎ直す
+                val call = ProtoBus.service?.call
+                if (call?.isOn == true) { call.disconnect(); call.connect() }
+                Toast.makeText(this@DetailSettingsActivity,
+                    if (on) "メディア音量で出します" else "通話の音声で出します（エコー除去は強め・音量キーは通話音量）",
+                    Toast.LENGTH_SHORT).show()
+            }
+        })
+        body.addView(TextView(this).apply {
+            text = "プロトが話している間のマイク"
+            setTextColor(Ui.TEXT)
+            setPadding(0, dp(8), 0, 0)
+        })
+        val talkMic = RadioGroup(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val micChoices = listOf("auto" to "自動", "keep" to "割り込みOK", "mute" to "止める")
+        micChoices.forEachIndexed { i, (_, label) -> talkMic.addView(RadioButton(this).apply { text = label; id = 200 + i; setTextColor(Ui.TEXT) }) }
+        val curMic = prefs.getString(Prefs.TALK_MIC, "auto")
+        talkMic.check(200 + micChoices.indexOfFirst { it.first == curMic }.coerceAtLeast(0))
+        talkMic.setOnCheckedChangeListener { _, id ->
+            prefs.edit().putString(Prefs.TALK_MIC, micChoices[id - 200].first).apply()
+            ProtoBus.service?.call?.applyMic()
+        }
+        body.addView(talkMic)
+        body.addView(TextView(this).apply {
+            text = "自動：スピーカーの時は止める（自分の声を拾ってループしない）／イヤホンの時は話している途中でも割り込める"
+            setTextColor(Ui.FAINT)
+            textSize = 12f
+        })
+
         head("Tailscale")
         button("Tailscaleを開く") {
             val ts = packageManager.getLaunchIntentForPackage("com.tailscale.ipn")

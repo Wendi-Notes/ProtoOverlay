@@ -150,3 +150,22 @@ AI・人が改造するときに最初に読むファイル。
 - 直し方：ProtoBus に addHistoryListener / removeHistoryListener（何人でも入れる）。ダッシュボードは onResume で登録・onPause で外す。バーは onCreate で登録・onDestroy で外す。
 - PCの音声認識が「話している途中の文字」も送るようになった（同じ lk.segment_id で何度も届く）ので、addHistory(who, text, key) で同じ key の行は書き換える。プロトの返事も reader.flow で届いた分から少しずつ出す。
 - 前の版：backup\*.kt.*_hist
+
+## 音声をメディア経路へ（2026-11-21）
+- 通話の音声（MODE_IN_COMMUNICATION / STREAM_VOICE_CALL）だと音量キーでメディア音量として下げられないため、既定をメディア経路に戻した（ProtoCall.audioOverrides）
+  - AudioType.MediaAudioType（USAGE_MEDIA・STREAM_MUSIC・MODE_NORMAL）＋ AudioSwitchHandler を自前で渡して manageAudioFocus=false（つないだだけで動画・音楽が止まらないように）。disableCommunicationModeWorkaround=true
+  - エコー対策：JavaAudioDeviceModule の setUseHardwareAcousticEchoCanceler(false)。端末のAECは通話モード前提でメディア再生の音を参照できないことが多いので、WebRTC内蔵のソフトAEC（自分が再生した音を参照して消す）に任せる。HWのノイズ抑制はそのまま
+  - バー・ダッシュボードを開いている間は volumeControlStream=STREAM_MUSIC（何も鳴っていなくても音量キー＝メディア音量）
+- 自分の声よけ（ハウリング・ループ対策）：ProtoCall.guardMic()。設定「接続」→「音声」→「プロトが話している間のマイク」（Prefs.TALK_MIC）
+  - 自動（既定）：メディア経路でスピーカーから出している時だけ、lk.agent.state=speaking の間＋話し終わり MIC_TAIL_MS(450ms) はマイク送信を止める。イヤホン・Bluetooth・USBヘッドセットなら止めない（割り込みOK）。AudioDeviceCallback で抜き差しに追従
+  - 割り込みOK：止めない（PC側 agent.py の resume_false_interruption と自己エコー照合 _is_recent_echo に任せる）／止める：常に止める
+- 設定「プロトの声をメディア音量で出す」（Prefs.AUDIO_MEDIA、既定ON）をOFFにすると前の通話経路（端末のAEC・割り込み優先）に戻る。経路はつなぐ時に決まるので、切り替えると自動でつなぎ直す
+- logcat：ProtoCall の「音声の経路=…」「マイク送信=ON/OFF / 自分の声よけ=…」
+- PC側は変更なし。コンパイル・実機確認は未実施（Android Studio でビルドしてから実機で：音量キー・スピーカーでのループ有無・イヤホンでの割り込み）
+- 前の版：_backup_20261121_media_audio\
+
+## バーを開く時のワープ・ダッシュボードの入力欄（2026-11-21）
+- バーを開いた時、プロトが下からスライドして上がっていた → PanelActivity.report() を setPanelTop(top, instant = true) にして、アニメなしでふちへ（ワープ）
+- ダッシュボード（SettingsActivity）の一番下に、Web版と同じ文字入力欄＋「送る」を追加（アプリ版のみ）。sendInput()：履歴に「あなた（文字）」で足して ProtoCall.sendTextConnecting（つながっていなければ、つないでから lk.chat で送る）。キーボードの「送信」でも送れる。プロト未起動なら案内のトーストだけ
+  - キーボードが出たら SOFT_INPUT_ADJUST_RESIZE で画面を縮める（プロトは履歴の箱のふちについていく）
+  - 前の版：backup\*.kt.20261121_2100_barwarp_input
