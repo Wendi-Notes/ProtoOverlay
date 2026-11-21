@@ -33,6 +33,13 @@ class PanelActivity : Activity() {
     private lateinit var th: BarTheme
     private var resumed = false
 
+    private val revealProto = Runnable {
+        if (resumed) {
+            report()
+            ProtoBus.service?.hideForOpen(false)
+        }
+    }
+
     private val layoutListener = ViewTreeObserver.OnGlobalLayoutListener { report() }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -89,6 +96,7 @@ class PanelActivity : Activity() {
         super.onCreate(savedInstanceState)
         if (Prefs.get(this).getBoolean(Prefs.AUDIO_MEDIA, true)) volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         ProtoBus.panel = this
+        ProtoBus.service?.hideForOpen(true)
         setFinishOnTouchOutside(true)
         th = BarTheme.current(this)
         ProtoBus.addHistoryListener(historyHook)
@@ -229,7 +237,8 @@ class PanelActivity : Activity() {
         super.onResume()
         resumed = true
         ProtoBus.service?.call?.connect()
-        root.post { report() }
+        window.decorView.removeCallbacks(revealProto)
+        window.decorView.postDelayed(revealProto, 380)
     }
 
     /**
@@ -239,8 +248,13 @@ class PanelActivity : Activity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (!hasFocus) {
+            window.decorView.removeCallbacks(revealProto)
+            ProtoBus.service?.hideForOpen(false)
             if (!ProtoBus.dashboardVisible) ProtoBus.setPanelTop(null)
-        } else root.post { report() }   // 通知シェードなどから戻った時は、またふちにつかまる
+        } else {
+            window.decorView.removeCallbacks(revealProto)
+            window.decorView.postDelayed(revealProto, 380)
+        }
     }
 
     override fun onUserLeaveHint() {
@@ -250,6 +264,8 @@ class PanelActivity : Activity() {
 
     override fun onPause() {
         resumed = false
+        window.decorView.removeCallbacks(revealProto)
+        ProtoBus.service?.hideForOpen(false)
         if (!ProtoBus.dashboardVisible) ProtoBus.setPanelTop(null)   // ⚙でダッシュボードへ移った時は、ダッシュボード側の位置を消さない
         super.onPause()
     }
