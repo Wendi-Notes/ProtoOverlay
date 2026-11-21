@@ -88,7 +88,7 @@ See the [user setup guide](docs/SETUP.md) before installing.
 
 ## Install
 
-Download an APK from [GitHub Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) when one is available. If no release is listed, a distributable APK has not been published yet.
+Download the APK and `app-release.apk.sha256` from [GitHub Releases](https://github.com/Wendi-Notes/ProtoOverlay/releases) when available. Verify the APK's SHA-256 against the checksum file. If no release is listed, a distributable APK has not been published yet.
 
 Requires Android 11 (API 30) or later. Overlay, microphone, and notification permissions are needed; camera and screen capture are optional.
 
@@ -104,7 +104,13 @@ cd ProtoOverlay
 .\gradlew.bat assembleDebug
 ```
 
-The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. See the [developer guide](docs/DEVELOPMENT.md) for signing and release-key handling. Never commit a private signing key or its passwords.
+The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. See the [developer guide](docs/DEVELOPMENT.en.md) for signed releases and release-key handling. Never commit a private signing key or its passwords.
+
+## Documentation
+
+- [User setup guide](docs/SETUP.md)
+- [Developer guide (signing and GitHub Releases)](docs/DEVELOPMENT.en.md)
+- [Japanese README](README.md)
 
 ## License
 

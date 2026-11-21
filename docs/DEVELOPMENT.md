@@ -49,14 +49,33 @@ Android アプリは設定 URL に `token?character=proto` を追加して HTTP 
 .\gradlew.bat assembleDebug
 ```
 
-デバッグ APK は Android のデバッグ鍵で署名されます。Google Play や継続的な一般配布向けの正式な署名鍵ではありません。release ビルドには署名設定を含めていないため、`assembleRelease` だけでは未署名 APK が生成されます。配布用 APK は Android Studio の **Build > Generate Signed Bundle / APK** で、自分で管理するリリース鍵を選んで作成してください。
+デバッグ APK は Android のデバッグ鍵で署名されます。Google Play や継続的な一般配布向けの正式な署名鍵ではありません。release ビルドには専用のリリース鍵が必要です。GitHub Actions で配布する場合は、以下の手順で Secrets を登録してください。ローカルで `assembleRelease` を実行する場合も同じ環境変数を設定します。Android Studio を使う場合は **Build > Generate Signed Bundle / APK** でリリース鍵を選べます。
 
-1. Android Studio の **Build > Generate Signed Bundle / APK** から APK を選び、リリース鍵を用意します。または、Gradle の release signing config をローカル専用の秘密情報から設定します。
-2. 秘密鍵（`.jks` / `.keystore`）、パスワード、ローカル署名設定を Git に追加しません。`.gitignore` を確認し、GitHub Actions で署名するなら GitHub Secrets を利用します。
-3. リリース鍵は安全な場所にバックアップします。鍵を失うと、同じアプリ ID で既存ユーザーに更新を配布できなくなる場合があります。
-4. APK を公開する前に、端末へのインストール、主要機能、署名、SHA-256 を確認し、リリースノートに記載します。
+### GitHub Releases への配布
 
-`app/build.gradle.kts` は release バリアントを Android の debug signing config で署名しない設定です。Gradle の release signing config を追加する場合は、鍵情報をビルドファイルへ直書きせず、ローカル専用のプロパティまたは GitHub Secrets から読み込んでください。
+`v*` 形式のタグを push すると GitHub Actions が `release` バリアントをビルドし、署名済み APK と SHA-256 ファイルを GitHub Release に添付します。未設定または不正な鍵情報ではワークフローと Gradle ビルドが失敗し、debug 署名へフォールバックしません。
+
+1. 専用の Android リリース鍵（`.jks`）を用意します。既存の配布を更新する場合は、以前のリリースと同じ鍵を使ってください。
+2. GitHub リポジトリの **Settings > Secrets and variables > Actions** に次の Repository secrets を登録します。
+
+   | Secret | 値 |
+   |---|---|
+   | `ANDROID_KEYSTORE_BASE64` | `.jks` ファイル全体の Base64 |
+   | `ANDROID_KEYSTORE_PASSWORD` | キーストアのパスワード |
+   | `ANDROID_KEY_ALIAS` | 鍵エイリアス |
+   | `ANDROID_KEY_PASSWORD` | 鍵のパスワード |
+
+   Base64 は秘密情報そのものです。端末上で生成して GitHub に直接登録し、チャット、リポジトリ、ログへ貼り付けないでください。例: `base64 -w 0 release-key.jks`（Linux）、`base64 release-key.jks`（macOS）、または PowerShell の `[Convert]::ToBase64String([IO.File]::ReadAllBytes("release-key.jks"))`。
+3. Actions の実行が許可されていることを確認し、バージョンタグを push します。
+
+   ```powershell
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+
+4. GitHub Actions の完了後、GitHub Releases で APK と `app-release.apk.sha256` を確認します。ダウンロード後、SHA-256 を照合し、必要に応じて実機インストールと動作を確認してください。Windows では `Get-FileHash .\app-release.apk -Algorithm SHA256` で計算できます。
+
+リリース鍵は暗号化した安全な場所に複数バックアップし、アクセスを限定してください。鍵を紛失すると、同じアプリ ID で既存ユーザーに更新を配布できなくなる場合があります。秘密鍵やパスワードをリポジトリへ登録しないでください。
 
 ## 依存関係とライセンス
 
